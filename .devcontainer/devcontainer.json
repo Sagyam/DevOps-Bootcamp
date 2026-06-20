@@ -23,7 +23,10 @@
       },
       // Minimal on purpose — this is a terminal-first class.
       "extensions": [
-        "eamodio.gitlens"
+        "eamodio.gitlens",
+        "redhat.vscode-yaml",
+        "sdras.night-owl",
+        "tomoki1207.pdf"
       ]
     }
   }
