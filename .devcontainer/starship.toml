@@ -1,0 +1,48 @@
+# =============================================================================
+#  starship.toml  —  a clean, readable prompt for teaching
+#  Chosen to avoid Nerd-Font-only glyphs so it renders in the Codespaces
+#  browser terminal. If students use a Nerd Font locally, it still looks great.
+#  Shows: working dir, git branch + status, last command's run time, and an
+#  exit-code-colored prompt char (green = success, red = the last command failed)
+#  — all of which are genuinely useful things to *see* while learning the shell.
+# =============================================================================
+
+add_newline = true
+
+format = """
+$directory$git_branch$git_status$cmd_duration
+$character"""
+
+[directory]
+style = "bold cyan"
+truncation_length = 4
+truncate_to_repo = false
+
+[git_branch]
+symbol = "git:"
+style = "bold purple"
+format = "[$symbol$branch]($style) "
+
+[git_status]
+style = "bold yellow"
+# Explicit ASCII/Latin-1 markers — no Nerd Font needed, renders everywhere.
+format = '([$all_status$ahead_behind]($style) )'
+conflicted = "="
+ahead = ">"
+behind = "<"
+diverged = "<>"
+untracked = "?"
+stashed = "*"
+modified = "!"
+staged = "+"
+renamed = "»"
+deleted = "x"
+
+[cmd_duration]
+min_time = 500
+style = "dimmed white"
+format = "took [$duration]($style) "
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
