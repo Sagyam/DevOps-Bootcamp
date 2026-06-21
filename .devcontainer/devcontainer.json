@@ -8,6 +8,14 @@
   // Prime the offline tldr cache and set up delta for nicer git diffs.
   "postCreateCommand": "tldr --update || true; git config --global core.pager 'delta'; git config --global delta.navigate true; git config --global delta.line-numbers true",
 
+  // Add support for Docker in Docker
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:3.1.0": {
+      "version": "latest",
+      "containerUser": "student"
+    }
+  },
+
   "customizations": {
     "vscode": {
       "settings": {
@@ -20,14 +28,6 @@
         // still render the prompt cleanly. The font itself must live on the
         // CLIENT machine — it cannot be shipped inside the container.
         "terminal.integrated.fontFamily": "'MesloLGS NF', 'FiraCode Nerd Font', 'Hack Nerd Font', Menlo, Consolas, 'DejaVu Sans Mono', monospace"
-      },
-
-      // Add support for Docker in Docker,
-      "features": {    
-      "ghcr.io/devcontainers/features/docker-in-docker:3.1.0": {
-        "version": "latest",
-        "containerUser": "student"
-        }
       },
 
       // Minimal on purpose — this is a terminal-first class.
