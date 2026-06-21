@@ -7,4 +7,4 @@
 -- NOTE: the glyphs come from the TERMINAL font on each student's machine,
 -- not from inside the container. If a classroom terminal lacks a Nerd Font,
 -- set this to false and everyone gets identical ASCII fallbacks instead.
-vim.g.have_nerd_font = true
+vim.g.have_nerd_font = false

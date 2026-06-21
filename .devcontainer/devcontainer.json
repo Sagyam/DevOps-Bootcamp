@@ -23,11 +23,9 @@
         "terminal.integrated.profiles.linux": {
           "zsh": { "path": "/usr/bin/zsh" }
         },
-        // If a student has a Nerd Font installed locally it gets used and icons
-        // work; otherwise this falls through to ordinary monospace fonts that
-        // still render the prompt cleanly. The font itself must live on the
-        // CLIENT machine — it cannot be shipped inside the container.
-        "terminal.integrated.fontFamily": "'MesloLGS NF', 'FiraCode Nerd Font', 'Hack Nerd Font', Menlo, Consolas, 'DejaVu Sans Mono', monospace"
+        // Icons are disabled in Neovim (vim.g.have_nerd_font = false), so no Nerd
+        // Font is required. This just picks a clean monospace per platform.
+        "terminal.integrated.fontFamily": "Menlo, Consolas, 'DejaVu Sans Mono', monospace"
       },
 
       // Minimal on purpose — this is a terminal-first class.
