@@ -15,7 +15,6 @@ A companion reference for the **Linux for DevOps** chapter. Organized the same w
 | Command | Does | Example |
 |---|---|---|
 | `pwd` | Print working directory | `pwd` → `/opt/myapp` |
-| `whoami` | Print current user | `whoami` → `deploy` |
 | `ls -lah` | List: long, all (incl. hidden), human sizes | `ls -lah /var/log` |
 | `cd <dir>` | Change directory | `cd /etc/nginx` · `cd -` (jump back) · `cd` (home) |
 | `tree -L <n>` | Show directory tree, `n` levels deep | `tree -L 2 /etc/systemd` |
