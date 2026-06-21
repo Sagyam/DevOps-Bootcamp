@@ -1,0 +1,77 @@
+{
+  "cluster": "orbit-prod",
+  "region": "ap-south-1",
+  "updated": "2026-06-18T09:00:00Z",
+  "services": [
+    {
+      "name": "api",
+      "image": "orbit/api:1.8.2",
+      "replicas": 4,
+      "port": 8080,
+      "healthy": true,
+      "env": "prod",
+      "resources": { "cpu": "500m", "memory": "512Mi" },
+      "tags": ["public", "critical"]
+    },
+    {
+      "name": "auth",
+      "image": "orbit/auth:2.1.0",
+      "replicas": 3,
+      "port": 9000,
+      "healthy": true,
+      "env": "prod",
+      "resources": { "cpu": "250m", "memory": "256Mi" },
+      "tags": ["public", "critical"]
+    },
+    {
+      "name": "worker",
+      "image": "orbit/worker:1.8.2",
+      "replicas": 6,
+      "port": 0,
+      "healthy": true,
+      "env": "prod",
+      "resources": { "cpu": "1000m", "memory": "1Gi" },
+      "tags": ["internal"]
+    },
+    {
+      "name": "billing",
+      "image": "orbit/billing:0.9.4",
+      "replicas": 2,
+      "port": 8090,
+      "healthy": false,
+      "env": "prod",
+      "resources": { "cpu": "250m", "memory": "256Mi" },
+      "tags": ["internal", "critical"]
+    },
+    {
+      "name": "cache",
+      "image": "redis:7.2",
+      "replicas": 1,
+      "port": 6379,
+      "healthy": false,
+      "env": "prod",
+      "resources": { "cpu": "100m", "memory": "128Mi" },
+      "tags": ["internal"]
+    },
+    {
+      "name": "dashboard",
+      "image": "orbit/dashboard:3.0.1",
+      "replicas": 2,
+      "port": 3000,
+      "healthy": true,
+      "env": "prod",
+      "resources": { "cpu": "250m", "memory": "256Mi" },
+      "tags": ["public"]
+    },
+    {
+      "name": "analytics",
+      "image": "orbit/analytics:0.4.0",
+      "replicas": 0,
+      "port": 7000,
+      "healthy": true,
+      "env": "staging",
+      "resources": { "cpu": "500m", "memory": "512Mi" },
+      "tags": ["internal", "experimental"]
+    }
+  ]
+}

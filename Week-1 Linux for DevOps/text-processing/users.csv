@@ -1,0 +1,21 @@
+id,name,email,role,country,signup_date,plan,active,monthly_spend
+1001,Aarav Sharma,aarav@orbit.io,admin,NP,2025-01-12,enterprise,true,499
+1002,Bina Khatri,bina.k@orbit.io,user,NP,2025-02-03,pro,true,29
+1003,Chen Wei,chen.wei@orbit.io,user,CN,2025-02-19,pro,true,29
+1004,Diego Morales,diego@orbit.io,viewer,BR,2025-03-01,free,true,0
+1005,Erika Bauer,erika.b@orbit.io,user,DE,2025-03-08,team,true,99
+1006,Farhan Ali,farhan@orbit.io,admin,IN,2025-03-22,enterprise,true,499
+1007,Grace Lee,grace.lee@orbit.io,user,US,2025-04-02,pro,false,29
+1008,Hiroshi Tanaka,hiro@orbit.io,user,JP,2025-04-11,team,true,99
+1009,"Rai, Sushma",sushma.rai@orbit.io,viewer,NP,2025-04-15,free,false,0
+1010,Isabel Cruz,isabel@orbit.io,user,US,2025-04-28,pro,true,29
+1011,Jamal Okoye,jamal@orbit.io,user,NG,2025-05-03,team,true,99
+1012,Karan Mehta,karan@orbit.io,Admin,IN,2025-05-09,enterprise,true,499
+1013,Lena Novak,lena.n@orbit.io,user,DE,2025-05-14,free,true,0
+1014,Mei Lin,mei.lin@orbit.io,viewer,CN,2025-05-21,free,false,0
+1015,Noah Williams,noah@orbit.io,user,GB,2025-05-30,pro,true,29
+1016,Omar Haddad,omar@orbit.io,user,AE,2025-06-04,team,true,99
+1017,Priya Nair,priya@orbit.io,admin,IN,2025-06-09,enterprise,true,499
+1018,Quentin Roy,quentin@orbit.io,user,FR,2025-06-12,pro,false,29
+1019,Riya Gurung,riya.g@orbit.io,viewer,NP,2025-06-15,free,true,0
+1020,Sam Patel,sam.patel@orbit.io,user,GB,2025-06-18,team,true,99

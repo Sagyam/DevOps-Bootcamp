@@ -1,0 +1,55 @@
+# Orbit application config (staging)
+app:
+  name: orbit
+  env: staging
+  version: 1.8.2
+  debug: false
+  maintainers:
+    - aarav@orbit.io
+    - priya@orbit.io
+
+database:
+  host: db.internal.orbit.io
+  port: 5432
+  name: orbit
+  pool: 20
+  ssl: true
+  replicas:
+    - host: db-ro-1.internal.orbit.io
+      port: 5432
+    - host: db-ro-2.internal.orbit.io
+      port: 5432
+
+cache:
+  host: cache.internal.orbit.io
+  port: 6379
+  ttl_seconds: 300
+
+services:
+  - name: api
+    port: 8080
+    replicas: 4
+    public: true
+  - name: auth
+    port: 9000
+    replicas: 3
+    public: true
+  - name: worker
+    port: 0
+    replicas: 6
+    public: false
+  - name: billing
+    port: 8090
+    replicas: 2
+    public: false
+
+feature_flags:
+  new_billing: false
+  dark_mode: true
+  beta_reports: false
+  signups_open: true
+
+limits:
+  max_upload_mb: 25
+  rate_per_min: 120
+  session_hours: 24
