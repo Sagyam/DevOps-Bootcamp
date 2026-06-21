@@ -1,7 +1,6 @@
 {
   "name": "Linux Fundamentals Bootcamp",
   "image": "sagyam/devops-bootcamp:latest",
-  "remoteUser": "student",
 
   // Prime the offline tldr cache and set up delta for nicer git diffs.
   "postCreateCommand": "tldr --update || true; git config --global core.pager 'delta'; git config --global delta.navigate true; git config --global delta.line-numbers true",
@@ -23,7 +22,7 @@
         },
         // Icons are disabled in Neovim (vim.g.have_nerd_font = false), so no Nerd
         // Font is required. This just picks a clean monospace per platform.
-        "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font, JetBrainsMono NF, 'Menlo', 'Consolas', monospace",
+        "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font', 'JetBrainsMono NF', 'Menlo', 'Consolas', monospace",
         "terminal.integrated.gpuAcceleration": "off"
       },
 
