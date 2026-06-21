@@ -50,6 +50,26 @@ Modes: **Normal** (navigate), **Insert** (`i` to type), **Command** (`:`).
 | `/text` then `n` | Search forward, next match |
 | `:%s/old/new/g` | Replace all in file |
 
+#### Search with your fingers, not your eyes
+
+Don't scroll and scan with your eyes, then arrow over one cell at a time. **Name where you want to go** and let vim jump there. These motions move you by *meaning* — a word, a character, a line — not one keystroke per column.
+
+| Keys | Jumps to |
+|---|---|
+| `/pat` · `?pat` | First match forward / backward (`Enter` to land) |
+| `n` / `N` | Repeat last search, same / opposite direction |
+| `*` / `#` | Search the word **under the cursor**, fwd / back |
+| `f{c}` / `F{c}` | Onto the next / prev `{c}` on this line |
+| `t{c}` / `T{c}` | Up to (just before) the next / prev `{c}` |
+| `;` / `,` | Repeat the last `f`/`t`/`F`/`T`, same / reverse |
+| `w` · `b` · `e` | Word: next start / prev start / end of word |
+| `0` · `^` · `$` | Line: start / first non-blank / end |
+| `gg` · `G` · `:42` | File top / file end / go to line 42 |
+| `%` | Jump to the matching `()` `{}` `[]` |
+| `Ctrl-d` / `Ctrl-u` | Half-page down / up (keep your bearings) |
+
+**The payoff — aim, then act.** Every motion composes with an operator, so a search *becomes* an edit: `d/ERROR` deletes up to the next "ERROR", `ci"` changes inside the quotes, `ct;` changes up to the next `;`, `y}` yanks to the next blank line. Once you can *aim*, editing collapses to **operator + target**.
+
 ### nano — the friendly fallback
 
 `nano <file>` then edit directly. `^` means **Ctrl**. `^O` save (write Out) · `^X` exit · `^W` search · `^K` cut line · `^U` paste.
