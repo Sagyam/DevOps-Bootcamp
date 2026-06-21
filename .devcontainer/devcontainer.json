@@ -1,8 +1,6 @@
 {
   "name": "Linux Fundamentals Bootcamp",
-  "build": {
-    "dockerfile": "sagyam/devops-bootcamp:latest"
-  },
+  "image": "sagyam/devops-bootcamp:latest",
   "remoteUser": "student",
 
   // Prime the offline tldr cache and set up delta for nicer git diffs.
