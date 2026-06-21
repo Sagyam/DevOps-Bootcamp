@@ -3,7 +3,7 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "remoteUser": "vscode",
+  "remoteUser": "student",
 
   // Prime the offline tldr cache and set up delta for nicer git diffs.
   "postCreateCommand": "tldr --update || true; git config --global core.pager 'delta'; git config --global delta.navigate true; git config --global delta.line-numbers true",
