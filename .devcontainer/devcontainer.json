@@ -1,7 +1,7 @@
 {
   "name": "Linux Fundamentals Bootcamp",
   "build": {
-    "dockerfile": "sagyam/devops-bootcamp:latest",
+    "dockerfile": "sagyam/devops-bootcamp:latest"
   },
   "remoteUser": "student",
 
