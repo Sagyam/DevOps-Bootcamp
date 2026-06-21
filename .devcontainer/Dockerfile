@@ -1,9 +1,9 @@
 # ============================================================================
 #  Linux Fundamentals — teaching devcontainer
-#  Base: Ubuntu 26.04 LTS (the official image is already minimal; there is no
-#  ubuntu:slim tag — "slim" is a Debian thing. 26.04 keeps it small + familiar.)
+#  Base: Ubuntu 24.04 LTS (the official image is already minimal; there is no
+#  ubuntu:slim tag — "slim" is a Debian thing. 24.04 keeps it small + familiar.)
 # ============================================================================
-FROM ubuntu:26.04
+FROM ubuntu:24.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG USERNAME=student
@@ -84,7 +84,7 @@ RUN ARCH="$(dpkg --print-architecture)" \
 RUN curl -fsSL https://starship.rs/install.sh | sh -s -- -y
 
 # ----------------------------------------------------------------------------
-#  Non-root user. The 26.04 image ships a default 'ubuntu' user at UID 1000,
+#  Non-root user. The 24.04 image ships a default 'ubuntu' user at UID 1000,
 #  so remove it before claiming 1000 for our 'student' user.
 # ----------------------------------------------------------------------------
 RUN if id -u ubuntu >/dev/null 2>&1; then userdel -r ubuntu 2>/dev/null || true; fi \
