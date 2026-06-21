@@ -25,7 +25,7 @@
         },
         // Icons are disabled in Neovim (vim.g.have_nerd_font = false), so no Nerd
         // Font is required. This just picks a clean monospace per platform.
-        "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font', 'Menlo', 'Consolas', monospace",
+        "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font, JetBrainsMono NF, 'Menlo', 'Consolas', monospace",
         "terminal.integrated.gpuAcceleration": "off"
       },
 
