@@ -1,0 +1,7 @@
+
+# Security: Block private keys and certificates
+*.pem
+*.key
+*.pfx
+*.cer
+*.crt
