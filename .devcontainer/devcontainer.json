@@ -35,7 +35,9 @@
         "eamodio.gitlens",
         "redhat.vscode-yaml",
         "sdras.night-owl",
-        "tomoki1207.pdf"
+        "tomoki1207.pdf",
+        "ms-vscode-remote.remote-containers",
+        "docker.docker"
       ]
     }
   }
