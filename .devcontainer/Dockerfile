@@ -6,7 +6,7 @@
 FROM ubuntu:26.04
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG USERNAME=vscode
+ARG USERNAME=student
 ARG USER_UID=1000
 ARG USER_GID=1000
 
@@ -85,7 +85,7 @@ RUN curl -fsSL https://starship.rs/install.sh | sh -s -- -y
 
 # ----------------------------------------------------------------------------
 #  Non-root user. The 26.04 image ships a default 'ubuntu' user at UID 1000,
-#  so remove it before claiming 1000 for our 'vscode' user.
+#  so remove it before claiming 1000 for our 'student' user.
 # ----------------------------------------------------------------------------
 RUN if id -u ubuntu >/dev/null 2>&1; then userdel -r ubuntu 2>/dev/null || true; fi \
     && groupadd --gid $USER_GID $USERNAME \
