@@ -55,6 +55,8 @@ alias ll='eza -l  --group-directories-first --color=auto --git ${EZA_ICONS:+--ic
 alias la='eza -la --group-directories-first --color=auto --git ${EZA_ICONS:+--icons=always}'
 alias lt='eza --tree --level=2 ${EZA_ICONS:+--icons=always}'
 
+export EZA_ICONS=1
+
 # duf in place of df
 alias df='duf'
 
@@ -68,6 +70,8 @@ alias please='sudo'
 
 # git diffs through delta (configured globally below on first run)
 export BAT_THEME="ansi"
+
+
 
 # ---- Syntax highlighting MUST be sourced LAST -------------------------------
 source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
