@@ -225,6 +225,7 @@ pgrep -a nginx              # PIDs matching a name
 kill <pid>                  # ask to stop (SIGTERM)
 kill -9 <pid>               # force kill (SIGKILL — last resort)
 btop                        # live interactive dashboard (q to quit)
+watch -n 1 'ps aux --sort=-%cpu | head'   # top CPU consumers, updated every second
 ```
 
 ### systemd & systemctl — managing services

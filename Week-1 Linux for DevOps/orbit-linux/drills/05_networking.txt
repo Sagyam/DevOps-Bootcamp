@@ -1,0 +1,117 @@
+==================================================================
+ DRILL 05 - NETWORKING, REMOTE & TRANSFER   "The station's phone & post"
+==================================================================
+The machine is a HOUSE. It has:
+  - a street address           (its IP)
+  - many numbered DOORS         (ports)
+  - a doorman who decides who comes in/out  (the firewall)
+  - a phone book                (DNS)
+  - and a postal service        (scp / rsync) for shipping crates.
+Learn to knock, look up addresses, see which doors are open, and ship.
+
+NEEDS REAL TOOLS. On the student box first run:
+  sudo apt update && sudo apt install -y iproute2 iputils-ping \
+    dnsutils netcat-openbsd curl traceroute rsync openssh-client
+
+------------------------------------------------------------------
+ ROUND A - WHAT'S MY ADDRESS?  ( ip )
+------------------------------------------------------------------
+  ip a                 All interfaces & their IPs. Find your inet line.
+  hostname -I          Quick: just my IP(s).
+  ip route             Where does traffic LEAVE by? (the "default" line
+                       is your gateway -- the front gate of the LAN.)
+  ip -br a             Brief one-line-per-interface view.
+
+------------------------------------------------------------------
+ ROUND B - IS ANYONE HOME OUT THERE?  ( ping  traceroute )
+------------------------------------------------------------------
+  ping -c 4 1.1.1.1        Knock 4 times on a known public host (by IP).
+                          Replies = the network path works.
+  ping -c 4 google.com    Knock by NAME. If THIS works but the IP knock
+                          already did, your DNS is fine too.
+  traceroute google.com   Follow the postal route, hop by hop, to the
+                          destination. See where packets slow or die.
+
+  DIAGNOSIS LADDER (the classic "is it the network?" climb):
+    1. ping 1.1.1.1 (IP)        works? -> internet path is up
+    2. ping google.com (name)   fails but #1 worked? -> it's DNS
+    3. curl https://...         fails but #2 worked? -> it's the app/TLS
+
+------------------------------------------------------------------
+ ROUND C - THE PHONE BOOK  ( dig  nslookup  host )
+------------------------------------------------------------------
+  dig +short github.com        Name -> IP(s). Clean output.
+  dig github.com               Full answer: which record, which server.
+  dig +short -x 1.1.1.1        REVERSE: IP -> name.
+  host github.com              Friendlier one-liner.
+  cat /etc/resolv.conf         WHICH name server am I asking?
+  cat /etc/hosts               Local overrides (checked before DNS).
+
+------------------------------------------------------------------
+ ROUND D - WHICH DOORS ARE OPEN?  ( ss  nc )
+------------------------------------------------------------------
+  ss -tulpn            The big one. LISTENING doors on THIS box:
+                         -t tcp  -u udp  -l listening  -p process  -n numeric
+                       Read which program owns each open port.
+  ss -tan              All TCP sockets and their states.
+  nc -zv 1.1.1.1 443   Knock on ONE door of a REMOTE host. "succeeded"
+                       = open. (-z scan, -v verbose.) Try port 22, 80, 443.
+
+------------------------------------------------------------------
+ ROUND E - FETCH FROM THE OUTSIDE  ( curl  wget )
+------------------------------------------------------------------
+  curl -I https://example.com      HEADERS only (-I). Read the status line.
+  curl -s https://api.github.com/zen   -s = silent, just the body.
+  curl -L http://github.com        -L = follow redirects.
+  curl -o out.html https://example.com   Save to a file.
+  wget https://example.com/        Download a file/page to disk.
+  curl is the swiss-army API tool; wget is the "just download it" tool.
+
+------------------------------------------------------------------
+ ROUND F - THE DOORMAN  ( ufw )   READ first, change carefully (sudo)
+------------------------------------------------------------------
+  sudo ufw status verbose      Is the firewall on? What's allowed?
+  Understand BEFORE you touch:
+    sudo ufw allow 22/tcp      open the SSH door
+    sudo ufw allow 80,443/tcp  open the web doors
+    sudo ufw deny 23           slam the telnet door shut
+    sudo ufw enable            turn the doorman ON
+  RULE: before 'ufw enable' on a REMOTE box, ALWAYS 'allow 22' first,
+  or you'll lock yourself out of your own house. People do this. Daily.
+
+------------------------------------------------------------------
+ ROUND G - GO NEXT DOOR  ( ssh )
+------------------------------------------------------------------
+  ssh user@host                Open a secure phone line into another box.
+  ssh -p 2222 user@host        Non-standard port.
+  ssh -i ~/.ssh/orbit_key user@host   Use a specific key.
+  ssh user@host 'uptime'       Run ONE command remotely and come back.
+  Inside, you're on THAT machine: re-run Drill 01 to orient. exit to leave.
+
+------------------------------------------------------------------
+ ROUND H - SHIP THE CRATES  ( scp  rsync )
+------------------------------------------------------------------
+  Local practice (loopback is fine; copy within the dojo):
+  scp ~/orbit-dojo/srv/orbit/config.yaml ~/orbit-dojo/playground/
+                              Copy a file (works host->host too:
+                              scp file user@host:/path/).
+  scp -r ~/orbit-dojo/srv/orbit user@host:/tmp/   -r for directories.
+
+  rsync -av ~/orbit-dojo/srv/orbit/ ~/orbit-dojo/playground/orbit-copy/
+                              -a archive (perms+times), -v verbose.
+                              Run it TWICE: the 2nd time copies nothing
+                              -- rsync only ships what CHANGED. That's
+                              why it beats scp for big/repeat transfers.
+  rsync -avn src/ dst/        -n = DRY RUN. Show what WOULD move. Use
+                              this before every real rsync. Always.
+
+------------------------------------------------------------------
+ BOSS CHECK
+------------------------------------------------------------------
+  1. Your app can't reach github.com. Walk the diagnosis ladder
+     (Round B) out loud and name which command proves each rung.
+  2. Show every port this machine is LISTENING on, with the owning
+     process, in one command.
+  3. Resolve github.com to an IP without the noise.
+  4. Why must 'ufw allow 22' come before 'ufw enable' on a remote box?
+==================================================================

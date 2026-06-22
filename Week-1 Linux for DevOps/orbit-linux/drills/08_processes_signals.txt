@@ -1,0 +1,128 @@
+==================================================================
+ DRILL 08 - PROCESSES & SIGNALS   "The station wildlife: spot, watch, cull"
+==================================================================
+Every running program is a CREATURE roaming the station. Some are yours,
+some belong to other crew, some are the station's own machinery. The
+golden rule of a SHARED station:
+
+   You may LOOK at every creature.  You may only TOUCH your own.
+
+That's not politeness -- the kernel enforces it. A normal user can send
+signals only to processes they own. Try to cull someone else's and the
+station says "Operation not permitted." That is the wall that keeps one
+crew member from stepping into another's shoes. We'll prove it.
+
+------------------------------------------------------------------
+ ROUND A - SPOT THE WILDLIFE  ( ps )
+------------------------------------------------------------------
+  ps aux                Every creature on the box (all users). Columns:
+                        USER PID %CPU %MEM ... STAT START TIME COMMAND
+  ps aux | head         Just the first screenful.
+  ps -ef                Same census, different format -- note PPID
+                        (the PARENT pid: who spawned whom).
+  ps -u $USER           ONLY YOUR creatures. (Compare its length to
+                        ps aux -- you own far fewer than you can see.)
+  pgrep -af bash        Find processes by name; -a shows the full
+                        command, -f matches the whole line.
+  pgrep -u $USER sleep  Your sleeps only.
+
+  STAT codes worth knowing: R running, S sleeping, D uninterruptible,
+  Z zombie (finished but un-reaped), T stopped, + in foreground.
+
+------------------------------------------------------------------
+ ROUND B - WATCH THEM LIVE  ( top )
+------------------------------------------------------------------
+  top                   Live, refreshing census. Inside top:
+                          P  sort by CPU      M  sort by MEMORY
+                          1  show per-core    u  filter by a user
+                          k  kill a PID (only works on YOUR own)
+                          q  quit
+  top -u $USER          Open already filtered to just you.
+  htop                  Friendlier, colored, scrollable -- if installed.
+                        (Can't install it on the shared box? That's
+                        Drill 09's whole lesson. Use top for now.)
+
+------------------------------------------------------------------
+ ROUND C - SPAWN, BACKGROUND, RECALL  ( & Ctrl-z jobs fg bg )
+------------------------------------------------------------------
+  Make a tame creature of your own to practice on:
+  sleep 600 &           Launch in the BACKGROUND. Note the [1] 12345
+                        ([job number] PID). Shell stays free.
+  jobs                  List YOUR background jobs in this shell.
+  pgrep -af "sleep 600" Find it by name; note its PID.
+  fg %1                 Pull job 1 to the FOREGROUND.
+  Ctrl-z                SUSPEND the foreground job (it freezes, STAT T).
+  bg %1                 Resume it in the BACKGROUND.
+  Ctrl-c                INTERRUPT (kill) the foreground job politely.
+
+  Make it survive logout (important on a shared box you'll disconnect):
+  nohup sleep 600 &     Immune to hangup; output goes to nohup.out.
+  disown -h %1          Detach it from this shell so logout won't reap it.
+
+------------------------------------------------------------------
+ ROUND D - SIGNALS: HOW YOU TALK TO A CREATURE  ( kill )
+------------------------------------------------------------------
+  A "kill" is really just SENDING A SIGNAL. Different signals, different
+  meanings. Practice ONLY on a creature you spawned:
+
+  sleep 900 & MY=$!     remember its PID in $MY
+  kill $MY              SIGTERM (15): "please wrap up." The polite,
+                        DEFAULT signal. Programs can clean up first.
+  sleep 900 & MY=$!
+  kill -9 $MY           SIGKILL (9): the cull. Instant, uncatchable,
+                        no cleanup. LAST resort, not first.
+  kill -STOP $MY        Freeze it (like Ctrl-z, by PID).
+  kill -CONT $MY        Thaw it.
+  kill -HUP $MY         SIGHUP (1): many daemons treat this as
+                        "re-read your config" -- a reload without restart.
+  kill -l               List every signal name/number.
+
+  pkill -u $USER sleep  Kill ALL your sleeps by name (yours only).
+  killall sleep         Same idea -- but on a SHARED box, be careful:
+                        it only reaches YOUR processes (the kernel
+                        blocks the rest), yet the habit is dangerous.
+                        Prefer pkill -u $USER to stay explicit.
+
+------------------------------------------------------------------
+ ROUND E - PROVE THE WALL  ( the isolation drill )
+------------------------------------------------------------------
+  This is the heart of a shared server. Do it and watch it fail.
+
+  1. See a process you do NOT own. PID 1 belongs to root/init:
+       ps -p 1 -o pid,user,cmd
+  2. Try to signal it as yourself:
+       kill -9 1
+     -> "kill: (1): Operation not permitted."
+     The kernel refused. You cannot touch what you don't own.
+  3. Same with another student's process (if you can spot one in ps aux):
+       kill <their_pid>      -> Operation not permitted.
+
+  THE LESSON: on home/<you> you are king; on the rest of the box you are
+  a guest who can look but not touch. You did not have to configure this
+  -- Unix user ownership gives it to you for free. (Only root, or sudo,
+  can cross that wall, which is exactly why students don't get sudo here.)
+
+------------------------------------------------------------------
+ ROUND F - BE A GOOD NEIGHBOR  ( nice  renice  load )
+------------------------------------------------------------------
+  On a shared box, a CPU hog hurts everyone. Manners are technical here.
+  uptime                Read the 3 load-average numbers (1/5/15 min).
+                        Rough rule: load above (number of cores) = strain.
+  nproc                 How many cores you're sharing.
+  nice -n 10 ./heavy.sh Start a job at LOWER priority (nicer to others;
+                        10 is gentle, 19 is "only when idle").
+  renice +10 -p $MY     Lower an ALREADY-running job's priority.
+  (You can only make YOUR jobs nicer, not meaner -- raising priority
+  needs root. The system is biased toward good manners.)
+
+------------------------------------------------------------------
+ BOSS CHECK
+------------------------------------------------------------------
+  1. List ONLY your own processes in one command.
+  2. Spawn a sleep, background it, suspend it, resume it, then kill it --
+     all by job number.
+  3. Send SIGTERM to one of your processes, then SIGKILL to another, and
+     say in one sentence how they differ.
+  4. Try to kill PID 1 and report exactly what the box says -- then
+     explain why that refusal is a FEATURE on a shared server.
+==================================================================

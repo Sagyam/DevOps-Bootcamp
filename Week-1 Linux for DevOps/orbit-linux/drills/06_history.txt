@@ -1,0 +1,104 @@
+==================================================================
+ DRILL 06 - HISTORY   "Read the ship's log without reading the whole book"
+==================================================================
+Something happened on this server. A good operator is a detective: you
+reconstruct what was done, when, and by whom -- WITHOUT scrolling
+through ten thousand lines. Two logbooks exist:
+  - YOUR shell history (what commands you/others typed)
+  - the SYSTEM's login records (who came aboard, and when)
+
+------------------------------------------------------------------
+ ROUND A - YOUR OWN LOGBOOK  ( history )
+------------------------------------------------------------------
+  history              Every command you've run, numbered.
+  history 20           Just the last 20.
+  history | tail       Same idea via a pipe.
+  history -c           Wipe the in-memory list (the diary on disk stays
+                       until the shell saves it). Use sparingly.
+
+------------------------------------------------------------------
+ ROUND B - REPLAY WITHOUT RETYPING  ( !! ! !$ )
+------------------------------------------------------------------
+  !!                   Re-run your LAST command verbatim.
+  sudo !!              Re-run the last command WITH sudo. (The famous
+                       "oh, permission denied" one-liner.)
+  !123                 Re-run command number 123 from history.
+  !grep                Re-run your most recent command STARTING with grep.
+  !$                   The LAST ARGUMENT of the previous command. e.g.
+                         mkdir ~/orbit-dojo/playground/vault
+                         cd !$          <- cd into that exact path
+  !*                   ALL arguments of the previous command.
+
+------------------------------------------------------------------
+ ROUND C - THE SUPERPOWER  ( Ctrl-r )   reverse incremental search
+------------------------------------------------------------------
+  Press Ctrl-r , then start typing any fragment of a past command.
+  The most recent match appears. Keep typing to narrow it.
+    Ctrl-r again  -> jump to the NEXT older match
+    Enter         -> run it
+    Right-arrow / End -> edit it first instead of running
+    Ctrl-g        -> bail out, forget it
+  DRILL: run a few commands (ls, cat, find ...), then Ctrl-r and type
+  "find" -- watch it surface your find command. This is how pros never
+  retype a long command twice.
+
+------------------------------------------------------------------
+ ROUND D - SEARCH THE LOGBOOK LIKE A DETECTIVE  ( history | grep )
+------------------------------------------------------------------
+  history | grep ssh           Every ssh command you ran.
+  history | grep -i orbit      Case-insensitive hunt.
+  history | grep rm            Did anyone delete something? (the start
+                               of every "what happened here" investigation.)
+
+------------------------------------------------------------------
+ ROUND E - ADD TIMESTAMPS TO THE DIARY  ( HISTTIMEFORMAT )
+------------------------------------------------------------------
+  Raw history says WHAT, not WHEN. Fix that for this session:
+    export HISTTIMEFORMAT="%F %T  "
+    history | tail            Now each line carries a date & time.
+  Make it permanent by adding that export line to  ~/.bashrc .
+  Related knobs (peek, don't worry about memorising):
+    echo $HISTSIZE  $HISTFILESIZE        how much is kept
+    echo $HISTFILE                       where it's saved (~/.bash_history)
+
+------------------------------------------------------------------
+ ROUND F - WHO CAME ABOARD  ( last  lastlog  who )
+------------------------------------------------------------------
+  These read the SYSTEM's login records, not your shell history:
+  last                 Recent logins/logouts, newest first. Who, from
+                       where, how long.
+  last -n 10           Just the last 10 sessions.
+  last reboot          Every time the box rebooted.
+  lastlog              The MOST RECENT login for EVERY user account.
+  who                  Logged in RIGHT NOW.
+  w                    ...and what they're doing this second.
+
+------------------------------------------------------------------
+ ROUND G - THE COLD CASE  ( investigate the auth log )
+------------------------------------------------------------------
+  A pre-seeded incident lives in the sandbox. Crack it:
+  cd ~/orbit-dojo
+
+  Q1) How many times did someone FAIL to log in?
+        grep -c "Failed password" var/log/auth.log
+  Q2) From which IP were those failures coming?
+        grep "Failed password" var/log/auth.log | grep -oE "from [0-9.]+" | sort -u
+        (one attacker IP should fall out -- that's your suspect.)
+  Q3) Who escalated to root via sudo, and what did they run?
+        grep "sudo:" var/log/auth.log
+  Q4) Who successfully logged in, and how?
+        grep "Accepted" var/log/auth.log
+
+  Write the one-paragraph incident note: who knocked, who got in, who
+  used the chief's powers. That paragraph is a real DevOps deliverable.
+
+------------------------------------------------------------------
+ BOSS CHECK
+------------------------------------------------------------------
+  1. Re-run the last command you typed, with sudo, in 7 keystrokes.
+  2. Using Ctrl-r, resurface a command containing "orbit" without
+     retyping it.
+  3. Find every 'rm' you've run this session in one pipe.
+  4. From auth.log: state how many login failures occurred and the
+     attacker's IP, each backed by one command.
+==================================================================

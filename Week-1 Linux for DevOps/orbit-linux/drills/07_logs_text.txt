@@ -1,0 +1,118 @@
+==================================================================
+ DRILL 07 - LOGS & TEXT (BONUS)   "Pan for gold in a river of log lines"
+==================================================================
+This is the one DevOps skill you'll use every single day: a service is
+misbehaving, and the answer is buried in a 200,000-line log. You don't
+read it. You FILTER, COUNT, and SORT until the gold falls out.
+The pipe  |  is a conveyor belt: each tool does one job, then hands the
+stream to the next.
+
+  cd ~/orbit-dojo
+  Our river:  var/log/orbit.log  (lines look like:)
+  2026-06-22 00:01:07 INFO 10.0.0.7 "GET /api/telemetry" 200 1ms
+   date       time    LVL  IP        request          code latency
+   $1         $2      $3   $4        $5  $6            $7   $8
+  (Remember those field numbers -- awk will want them.)
+
+------------------------------------------------------------------
+ ROUND A - LOOK WITHOUT DROWNING  ( head  tail  less )
+------------------------------------------------------------------
+  head var/log/orbit.log         First 10 lines.
+  head -n 3 var/log/orbit.log    First 3.
+  tail -n 5 var/log/orbit.log    Last 5.
+  less var/log/orbit.log         Scrollable reader. q to quit, / to
+                                 search inside, G end, g top. (Like vim!)
+  tail -f var/log/orbit.log      FOLLOW live -- new lines stream in as
+                                 they're written. THE log-watching move.
+                                 Ctrl-c to stop. (Nothing's writing here,
+                                 so it'll just wait -- that's expected.)
+
+------------------------------------------------------------------
+ ROUND B - FIND THE NEEDLE  ( grep )   like / in vim, for whole files
+------------------------------------------------------------------
+  grep NEEDLE var/log/orbit.log      One planted line. Find it instantly.
+  grep ERROR var/log/orbit.log       Every error line.
+  grep -c ERROR var/log/orbit.log    COUNT them instead of printing.
+  grep -n ERROR var/log/orbit.log    Show line NUMBERS.
+  grep -i error var/log/orbit.log    Case-INSENSITIVE.
+  grep -v INFO var/log/orbit.log     INVERT: every line that's NOT INFO.
+  grep -E "500|503" var/log/orbit.log   -E regex: 500 OR 503.
+  grep -r "orbit" var/log/            Recurse a whole DIRECTORY of logs.
+  grep -A2 -B2 NEEDLE var/log/orbit.log  2 lines of context After/Before.
+
+------------------------------------------------------------------
+ ROUND C - THE CONVEYOR BELT  ( | and wc )
+------------------------------------------------------------------
+  wc -l var/log/orbit.log              How many lines total?
+  grep ERROR var/log/orbit.log | wc -l How many errors? (same as grep -c,
+                                       but now you see the PIPE pattern.)
+  grep ERROR var/log/orbit.log | tail -3   Last 3 errors only.
+  Think: each | passes the left tool's output as the right tool's input.
+
+------------------------------------------------------------------
+ ROUND D - GRAB JUST ONE COLUMN  ( cut  awk )
+------------------------------------------------------------------
+  awk '{print $4}' var/log/orbit.log        Just the IP column.
+  awk '{print $7}' var/log/orbit.log        Just the status code.
+  awk '{print $4, $7}' var/log/orbit.log     IP and code together.
+  cut -d' ' -f3 var/log/orbit.log            cut: split on space, take 3rd.
+  awk is the scalpel; cut is the cleaver. Both slice columns.
+
+  awk can FILTER too (it's a tiny language):
+  awk '$7==500' var/log/orbit.log            Only lines whose code is 500.
+  awk '$3=="ERROR"' var/log/orbit.log        Only ERROR lines (no grep!).
+  awk '$8+0 > 150' var/log/orbit.log         Slow requests (latency>150).
+
+------------------------------------------------------------------
+ ROUND E - THE MONEY MOVE  ( sort | uniq -c | sort -rn )
+------------------------------------------------------------------
+  This four-tool combo answers "what's the TOP X?" -- the single most
+  useful one-liner in operations. Build it up piece by piece:
+
+  awk '{print $4}' var/log/orbit.log               1) pull the IPs
+  awk '{print $4}' var/log/orbit.log | sort        2) sort so dupes group
+  awk '{print $4}' var/log/orbit.log | sort | uniq -c     3) count each
+  awk '{print $4}' var/log/orbit.log | sort | uniq -c | sort -rn  4) rank
+
+  Read the result: the chattiest IP is at the TOP with its hit count.
+  (You should see 10.0.0.7 leading by a mile.)
+
+  Now answer these by swapping the field:
+  TOP STATUS CODES:
+    awk '{print $7}' var/log/orbit.log | sort | uniq -c | sort -rn
+  TOP REQUESTED PATHS:
+    awk '{print $6}' var/log/orbit.log | sort | uniq -c | sort -rn
+  HOW MANY DISTINCT IPs (count unique):
+    awk '{print $4}' var/log/orbit.log | sort -u | wc -l
+
+------------------------------------------------------------------
+ ROUND F - REWRITE ON THE FLY  ( sed )
+------------------------------------------------------------------
+  sed 's/ERROR/!!!!!/' var/log/orbit.log | grep "!!!!!" | head
+                                  s/old/new/  substitutes (first per line).
+  sed 's/ERROR/ERROR/g'           the /g flag = EVERY match on the line.
+  sed -n '5,8p' var/log/orbit.log Print ONLY lines 5-8 (-n + p).
+  sed '/INFO/d' var/log/orbit.log Delete INFO lines from the stream.
+  NOTE: by default sed prints to the screen and does NOT touch the file.
+  sed -i ...  edits the file IN PLACE -- powerful, no undo, test first.
+
+------------------------------------------------------------------
+ ROUND G - SAVE YOUR FINDINGS  ( > and a real pipeline )
+------------------------------------------------------------------
+  Build an error report and write it to a file:
+  grep ERROR var/log/orbit.log | awk '{print $4, $6, $7}' \
+    | sort | uniq -c | sort -rn > ~/orbit-dojo/error-report.txt
+  cat ~/orbit-dojo/error-report.txt
+  You just turned a 200-line log into a ranked summary a human can read
+  in 5 seconds. THAT is the job.
+
+------------------------------------------------------------------
+ BOSS CHECK  (each is ONE pipeline)
+------------------------------------------------------------------
+  1. How many ERROR lines are in orbit.log?            (two ways)
+  2. Which IP made the most requests, and how many?
+  3. List every distinct HTTP status code, ranked by frequency.
+  4. Find the single NEEDLE line and the 2 lines around it.
+  5. Produce a file ranking the busiest paths that returned 500.
+     (hint: awk '$7==500' ... then the $6 + sort|uniq -c|sort -rn combo)
+==================================================================

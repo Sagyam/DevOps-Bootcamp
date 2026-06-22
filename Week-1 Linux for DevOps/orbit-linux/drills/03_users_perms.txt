@@ -1,0 +1,117 @@
+==================================================================
+ DRILL 03 - USERS, GROUPS & PERMISSIONS   "Passports, tribes, and keys"
+==================================================================
+Every person aboard has a PASSPORT (a user identity), belongs to one
+or more TRIBES (groups), and every door/file has a sign saying who may
+enter (permissions). To use something locked, you either own a key,
+your tribe holds one, or you ask the chief for one (sudo).
+
+------------------------------------------------------------------
+ ROUND A - WHO AM I, WHO IS ABOARD  ( whoami  id  who  getent )
+------------------------------------------------------------------
+  whoami              Your passport name.
+  id                  uid (your number), gid (main tribe), groups (all
+                      tribes you belong to). Memorise this output shape.
+  groups              Just the tribe list.
+  who                 Who is logged in right now.
+  w                   ...and what they're up to.
+
+  Read the station roster (sandbox copies, safe to cat):
+  cd ~/orbit-dojo
+  cat etc/passwd.sample     One line per user. Decode the colons:
+                            name : x : UID : GID : comment : home : shell
+                            Find pilot's UID. Find the user whose shell
+                            is /usr/sbin/nologin (a service, not a human).
+  cat etc/group.sample      One line per tribe:
+                            tribe : x : GID : members
+                            Which tribes is "pilot" in? Who's in "galley"?
+
+  On a real box these aren't samples -- they're live:
+  getent passwd | head      The real user database.
+  getent group docker       Who can drive Docker without sudo.
+
+------------------------------------------------------------------
+ ROUND B - READING THE SIGN ON THE DOOR  ( ls -l )
+------------------------------------------------------------------
+  cd ~/orbit-dojo
+  ls -l bin/orbitctl
+  Decode the 10-character permission string, e.g.  -rwxr-xr-x
+
+     -   rwx   r-x   r-x
+     |    |     |     |
+   type owner group others
+
+  r = read (4)   w = write (2)   x = execute / enter-dir (1)
+  First char:  -  file    d  directory    l  symlink
+
+  ls -l srv/orbit/data       Read the perms on each packet.
+  stat -c '%A %a %U %G %n' bin/orbitctl
+                             '%A' symbolic, '%a' OCTAL, owner, group.
+
+------------------------------------------------------------------
+ ROUND C - CHANGE THE LOCKS  ( chmod )   two dialects
+------------------------------------------------------------------
+  Work on a throwaway file:
+  cd ~/orbit-dojo/playground
+  echo "secret launch codes" > codes.txt
+  ls -l codes.txt
+
+  SYMBOLIC dialect (who + what):
+    chmod u+x codes.txt      give OWNER execute
+    chmod g-r codes.txt      take read FROM the group
+    chmod o-rwx codes.txt    lock OTHERS out completely
+    chmod a+r codes.txt      give read to ALL (u+g+o)
+    ls -l codes.txt          watch the string change each time
+
+  OCTAL dialect (rwx as a 3-bit number, per column):
+    rwx=7  rw-=6  r-x=5  r--=4  -wx=3  -w-=2  --x=1  ---=0
+    chmod 600 codes.txt      owner rw, nobody else.  (rw-------)
+    chmod 644 codes.txt      owner rw, others read.  (rw-r--r--)
+    chmod 755 codes.txt      owner all, others r+x.  (rwxr-xr-x)
+    chmod 700 ~/orbit-dojo/home/pilot/junk   lock a whole folder
+                                             to its owner.
+
+  WHY x ON A DIRECTORY?  x on a dir = permission to ENTER it (cd).
+  No x, no entry, even if you can read the listing.
+
+------------------------------------------------------------------
+ ROUND D - CHANGE THE OWNER / TRIBE  ( chown  chgrp )
+------------------------------------------------------------------
+  Changing OWNER usually needs the chief (sudo) -- you can't give your
+  stuff to someone else for free. Changing to YOURSELF is allowed:
+    chown $USER codes.txt           (re-assert yourself as owner)
+  On a real box (needs sudo):
+    sudo chown pilot:crew /srv/orbit/config.yaml   owner=pilot tribe=crew
+    sudo chgrp crew /srv/orbit/config.yaml          tribe only
+  Read it back:  ls -l codes.txt
+
+------------------------------------------------------------------
+ ROUND E - THE DEFAULT LOCKS  ( umask )
+------------------------------------------------------------------
+  umask               Shows the bits SUBTRACTED from new files.
+  touch fresh.txt ; ls -l fresh.txt   See what perms files are born with.
+  (Common default 022 -> new files 644, new dirs 755.)
+
+------------------------------------------------------------------
+ ROUND F - ASKING THE CHIEF  ( sudo  su )
+------------------------------------------------------------------
+  sudo whoami         Run ONE command as root. Returns: root.
+                      (You must be in the 'sudo' tribe -- see group.sample.)
+  sudo -l             What am I actually allowed to run as root?
+  sudo !!             Re-run your LAST command, but with sudo.
+                      (The classic "ah, permission denied" fix.)
+  su - pilot          Become pilot fully (needs their password). Ctrl-d
+                      or 'exit' to return to your own passport.
+
+  RULE OF THE CHIEF: sudo is a loaded tool. Read the command twice
+  before you prepend sudo. Root has no guardrails.
+
+------------------------------------------------------------------
+ BOSS CHECK
+------------------------------------------------------------------
+  1. Make a file readable+writable by you ONLY, in both dialects
+     (chmod 600 AND the symbolic equivalent). Verify with ls -l.
+  2. From group.sample: name every tribe "pilot" belongs to.
+  3. Explain why a directory needs x to be entered.
+  4. Show, with one command, the octal permissions of bin/orbitctl.
+==================================================================

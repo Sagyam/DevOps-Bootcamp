@@ -1,0 +1,118 @@
+==================================================================
+ DRILL 09 - PACKAGES & THE SUPPLY DEPOT   "Requisition gear, share the bay"
+==================================================================
+On YOUR laptop you'd just  sudo apt install whatever . On a SHARED
+station that's a problem: apt needs root and changes the box for
+EVERYONE -- one student's "install" rewrites another's tools, and the
+whole point was that nobody steps into anyone else's shoes. So here:
+
+  - You DON'T have sudo, by design.
+  - You learn apt as a READ + SIMULATE tool (no root needed).
+  - When you actually need a binary, you install it INTO YOUR OWN HOME,
+    or inside YOUR OWN throwaway container -- the host stays pristine.
+
+------------------------------------------------------------------
+ ROUND A - READ THE DEPOT CATALOGUE  ( no root needed )
+------------------------------------------------------------------
+  apt list --installed              Everything already on the box.
+  apt list --installed | wc -l      Just how many. (A lot.)
+  apt list --installed | grep ssl   Is openssl here? which version?
+  apt show curl                     The catalogue card: version, size,
+                                    description, dependencies.
+  apt search "json"                 Find packages by keyword.
+  apt policy curl                   Installed vs candidate version, and
+                                    WHICH repo it would come from.
+  apt-cache depends curl            What curl needs to run.
+  apt-cache rdepends curl           What would BREAK if curl vanished.
+
+------------------------------------------------------------------
+ ROUND B - WHERE DID THIS COMMAND COME FROM?  ( dpkg )
+------------------------------------------------------------------
+  The detective skill: a binary misbehaves -- which package owns it?
+  which ls                          /usr/bin/ls
+  dpkg -S /usr/bin/ls               -> coreutils. The owning package.
+  dpkg -S $(which curl)             Chain it: command -> file -> package.
+  dpkg -L coreutils | grep bin/     EVERY file coreutils installed.
+  dpkg -l | grep -i nginx           Is nginx installed at all? (-l list)
+  dpkg -s curl                      Status + version of one package.
+
+------------------------------------------------------------------
+ ROUND C - SIMULATE THE MUTATION  ( -s / --dry-run, still no root )
+------------------------------------------------------------------
+  See exactly what an install WOULD do, change nothing, need no root:
+  apt-get install -s tree           "-s" = simulate. Read the
+                                    "newly installed" / "to remove" lines.
+  apt-get -s upgrade                What a full upgrade would touch.
+  Real mutations (FYI -- these need root and hit the WHOLE box, so they
+  are the INSTRUCTOR's job, not yours):
+        sudo apt update             refresh the catalogue
+        sudo apt install <pkg>      install for everyone
+        sudo apt remove <pkg>       remove for everyone
+        sudo apt upgrade            update everything
+  On the class VM the instructor pre-installs the shared toolset once;
+  you don't fight each other over it.
+
+------------------------------------------------------------------
+ ROUND D - GET A TOOL WITHOUT ROOT  ( install into YOUR home )
+------------------------------------------------------------------
+  You need a CLI tool nobody pre-installed. Put it in $HOME -- it's
+  yours alone, on your PATH, invisible to other students.
+
+  Python tools (most common):
+    pip install --user <pkg>        lands in ~/.local/bin
+    pipx install <tool>             ISOLATED per-tool venvs (best for
+                                    CLI apps like httpie, yt-dlp, ruff)
+    # newer/faster: uv tool install <tool>
+
+  Other ecosystems, all per-user, all no-root:
+    cargo install <tool>            Rust -> ~/.cargo/bin
+    go install <pkg>@latest         Go   -> ~/go/bin
+    npm config set prefix ~/.npm-global && npm i -g <tool>   Node -> ~/.npm-global/bin
+
+  THE CATCH IS ALWAYS PATH. A fresh ~/.local/bin/httpie won't run until
+  the shell can find it. Tie this back to Drill 01:
+    command -v httpie               empty? it's not on PATH yet.
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+    source ~/.bashrc                command -v httpie now resolves.
+
+  Last resort, extract a .deb WITHOUT installing it system-wide:
+    apt-get download tree           grabs tree_*.deb into the cwd (no root)
+    dpkg -x tree_*.deb ~/opt/tree   unpack into your home
+    ~/opt/tree/usr/bin/tree         run it straight from there
+                                    (you manage PATH/libs yourself -- advanced)
+
+------------------------------------------------------------------
+ ROUND E - THE DEVOPS ANSWER: YOUR OWN THROWAWAY BOX  ( rootless container )
+------------------------------------------------------------------
+  Want to "sudo apt install anything" with zero fear? Don't do it on the
+  host -- spin up a container that is yours alone and vanishes after.
+  Inside it you ARE root; outside, the station never noticed.
+
+    podman run --rm -it ubuntu:24.04 bash     # rootless, if available
+      # now inside YOUR container:
+      apt update && apt install -y nginx tree htop
+      # break it, fill it, whatever. exit, and --rm deletes it all.
+
+    # docker works the same if that's what the VM has:
+    docker run --rm -it ubuntu:24.04 bash
+
+    # distrobox makes a container feel like a cozy home dir:
+    distrobox create -i ubuntu:24.04 -n lab && distrobox enter lab
+
+  WHY THIS IS THE RIGHT HABIT: it's reproducible (same image every time),
+  disposable (--rm), and ISOLATED (your mess can't touch the host or
+  another student). This is how real DevOps installs "just to try it."
+  It's also the bridge to next week if you're doing Docker.
+
+------------------------------------------------------------------
+ BOSS CHECK
+------------------------------------------------------------------
+  1. Without root, find the version of openssl on the box AND which
+     package owns the `ssh` binary.
+  2. Simulate installing `tree` and read off how many packages it would
+     add -- without changing anything.
+  3. Install one CLI tool into your own home (pip --user or pipx), then
+     make it runnable by fixing PATH. Prove it with `command -v`.
+  4. In one sentence: why is `sudo apt install` the WRONG move on a
+     shared class VM, and what are your two clean alternatives?
+==================================================================

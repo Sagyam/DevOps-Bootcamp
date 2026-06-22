@@ -1,0 +1,86 @@
+==================================================================
+ DRILL 01 - ORIENT & INSPECT   "Take your bearings before you move"
+==================================================================
+You woke up on a server with the lights off. A good operator's first
+60 seconds are always the same four questions:
+  Where am I?  Who am I?  What machine is this?  What's around me?
+Answer them with your fingers, never by guessing.
+
+------------------------------------------------------------------
+ ROUND A - WHERE AM I?  ( pwd  cd  ls )
+------------------------------------------------------------------
+  pwd                 Print the room you're standing in.
+  cd ~/orbit-dojo     Walk to the dojo. (You should already live here.)
+  ls                  Look around. Bare names only.
+  ls -l               Look HARDER: permissions, owner, size, date.
+  ls -la              Now show the HIDDEN things (dotfiles).
+  ls -lah             ...with human-readable sizes (K, M, G).
+  cd srv/orbit        Step into a room.
+  cd ..               Step back out.
+  cd -                Teleport to the PREVIOUS room you were in.
+  cd                  (no args) Go home. Always works. Your anchor.
+
+------------------------------------------------------------------
+ ROUND B - WHO AM I?  ( whoami  id )
+------------------------------------------------------------------
+  whoami              Your login name.
+  id                  Your uid, your gid, and EVERY group you're in.
+  hostname            What is this box called?
+
+------------------------------------------------------------------
+ ROUND C - WHAT MACHINE IS THIS?  ( uname  /etc/os-release )
+------------------------------------------------------------------
+  uname -a            Kernel, arch, hostname -- the whole dog tag.
+  uname -r            Just the kernel version.
+  cat /etc/os-release Which distro & version? (Ubuntu? Debian? RHEL?)
+  uptime              How long has it been up? How loaded is it?
+  TARGET: this drill expects an Ubuntu-ish box. Confirm with the
+  PRETTY_NAME line from /etc/os-release.
+
+------------------------------------------------------------------
+ ROUND D - HOW MUCH ROOM, HOW MUCH AIR?  ( df  du  free )
+------------------------------------------------------------------
+  df -h               Disk space per mount. Watch the "Use%" column.
+  free -h             RAM and swap, human-readable.
+  du -sh ~/orbit-dojo Total size of the dojo. (-s summary, -h human)
+  du -sh *            Size of each thing in the current folder.
+  nproc               How many CPU cores you've got.
+
+------------------------------------------------------------------
+ ROUND E - WHAT IS THIS THING?  ( file  stat  which / type )
+------------------------------------------------------------------
+  file bin/orbitctl       Script? Binary? Text? file just KNOWS.
+  file var/log/orbit.log  Compare the answer.
+  stat bin/orbitctl       The full dossier: size, perms, 3 timestamps.
+  type ls                 Is "ls" a builtin, alias, or a real program?
+  command -v cat          WHERE does cat actually live on disk?
+  which bash              Same idea (path of an executable).
+
+------------------------------------------------------------------
+ ROUND F - WHAT'S RUNNING & WHO'S HERE  ( ps  who )
+------------------------------------------------------------------
+  ps aux              Every process on the box. (Pipe to less / grep.)
+  ps aux | head       Just the first screenful.
+  who                 Who else is logged in right now?
+  w                   ...and what are they doing?
+
+------------------------------------------------------------------
+ ROUND G - FIND THINGS WITHOUT EYEBALLS  ( find  tree )
+------------------------------------------------------------------
+  find . -name "*.log"           Every .log under here, recursively.
+  find . -type d                 Only directories.
+  find . -name "*.tmp"           Locate the junk (you'll delete it
+                                 in Drill 02).
+  tree                           A map of everything. (needs: apt
+                                 install tree -- optional but lovely.)
+
+------------------------------------------------------------------
+ BOSS CHECK
+------------------------------------------------------------------
+  In ONE breath, answer out loud, each backed by a command:
+    1. What folder am I in?            -> pwd
+    2. What user am I?                 -> whoami
+    3. What OS & kernel?              -> cat /etc/os-release ; uname -r
+    4. Is the disk nearly full?        -> df -h
+    5. Where is the orbit.log file?    -> find . -name orbit.log
+==================================================================

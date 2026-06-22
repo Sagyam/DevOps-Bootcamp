@@ -1,0 +1,98 @@
+==================================================================
+ DRILL 02 - CREATE, COPY & MOVE   "A stagehand moving props in the dark"
+==================================================================
+You'll build crates, haul them between rooms, rename them, and throw
+the trash out the airlock. The COMMANDS are easy. The FLAGS are where
+careers are made or ended. Read every flag note.
+
+  Work entirely inside the playground:
+  cd ~/orbit-dojo/playground
+
+------------------------------------------------------------------
+ ROUND A - CONJURE THINGS FROM NOTHING  ( touch  mkdir )
+------------------------------------------------------------------
+  touch crates/bolt.txt        Make an empty file (or bump its time).
+  mkdir hangar                 Make ONE directory.
+  mkdir a/b/c                  FAILS. Parents don't exist yet.
+  mkdir -p a/b/c               WORKS. -p = make parents as needed.
+  echo "fuel: 80%" > crates/tank.txt   Create a file WITH content (>).
+  echo "fuel: 60%" > crates/tank.txt   '>' OVERWRITES. Old line gone.
+  echo "fuel: 40%" >> crates/tank.txt  '>>' APPENDS. Note the 2 lines.
+  cat crates/tank.txt          Proof.
+
+------------------------------------------------------------------
+ ROUND B - COPY  ( cp  and its dangerous convenience )
+------------------------------------------------------------------
+  cp crates/bolt.txt crates/bolt.bak     Copy a file.
+  cp crates/bolt.txt hangar/             Copy INTO a folder (slash!).
+  cp crates hangar/                      FAILS: crates is a directory.
+  cp -r crates hangar/                   -r = recursive. Now it works.
+  cp -v crates/tank.txt scrap/           -v = verbose, tells you what
+                                         it did. Great in scripts.
+  cp -i crates/tank.txt scrap/           -i = interactive: ASKS before
+                                         clobbering an existing file.
+                                         Answer n to keep yours.
+
+  TRAP: trailing slash matters.
+    cp file dest      -> if dest is a dir, copies INTO it
+                      -> if dest doesn't exist, copies AS that name
+
+------------------------------------------------------------------
+ ROUND C - MOVE = RENAME = THE SAME TOOL  ( mv )
+------------------------------------------------------------------
+  mv crates/bolt.bak crates/bolt.OLD     "Move" with no folder change
+                                         is just a RENAME.
+  mv crates/bolt.OLD airlock/            Actually relocate it.
+  ls airlock/                            Confirm it landed.
+  mv -v airlock/bolt.OLD scrap/          Verbose move.
+  mv -i ...                              -i asks before overwriting,
+                                         just like cp. Make it a habit.
+
+------------------------------------------------------------------
+ ROUND D - THROW IT OUT THE AIRLOCK  ( rm  rmdir )   *** CAREFUL ***
+------------------------------------------------------------------
+  There is no recycle bin. rm is permanent. Breathe before Enter.
+
+  rm scrap/tank.txt            Delete one file.
+  rm -i scrap/bolt.OLD         -i = confirm each one (training wheels).
+  rmdir hangar/a/b/c           Remove an EMPTY directory only.
+  rm -r hangar                 -r = recursive: folder AND contents.
+  rm -rf hangar                -f = force, no questions, no mercy.
+
+  THE ONE RULE YOU NEVER BREAK:
+    rm -rf  is a chainsaw. It is fine pointed at the playground.
+    NEVER aim it at  /  or  ~  or  *  while you're somewhere you
+    didn't mean to be. Always  pwd  first. Always.
+    (Try this SAFE habit: ls the thing, THEN rm it.)
+
+------------------------------------------------------------------
+ ROUND E - WILDCARDS & BRACES  ( *  ?  [ ]  { } )
+------------------------------------------------------------------
+  cd ~/orbit-dojo/srv/orbit/data
+  ls packet_*.bin             *  = any run of characters.
+  ls packet_0?.bin            ?  = exactly one character.
+  ls packet_0[12].bin         [] = one of these characters.
+  cd ~/orbit-dojo/playground
+  mkdir -p logs/{2024,2025,2026}   {} brace expansion: makes all 3.
+  touch report-{a,b,c}.txt          Three files in one stroke.
+  ls report-*.txt
+  rm report-*.txt             Sweep them away with one wildcard.
+
+------------------------------------------------------------------
+ ROUND F - SHORTCUTS  ( ln -s )
+------------------------------------------------------------------
+  ln -s ~/orbit-dojo/srv/orbit/config.yaml current-config
+  ls -l current-config        A symlink: see the "->" pointing home.
+                              Deleting the link does NOT delete target.
+
+------------------------------------------------------------------
+ BOSS CHECK
+------------------------------------------------------------------
+  1. Create  ~/orbit-dojo/playground/mission/  with a notes.txt in it,
+     in as few commands as you can.
+  2. Copy the whole mission/ folder into airlock/ .
+  3. Rename airlock/mission to airlock/mission-archive .
+  4. Delete the original playground/mission/ entirely -- but ls it
+     first to be sure you're aiming right.
+  Reset with  ./setup.sh --reset  if you make a mess. (That's the point.)
+==================================================================

@@ -1,0 +1,176 @@
+==================================================================
+ DRILL 04 - SYSTEMD & CRON   "Hired crew, and the station alarm clock"
+==================================================================
+Two ways the station does work without you watching:
+
+  systemd = your HIRED CREW. You hire them (enable), tell them to start
+            their shift (start), check if they showed up (status), send
+            them home (stop), and tell them to clock in automatically at
+            boot (enable). Each crew member is a "unit" / "service".
+
+  cron    = the ALARM CLOCK / appointment book. "Every weekday at 6:30,
+            ring this bell." Its 5-field syntax looks like hieroglyphs
+            until it clicks. We'll make it click.
+
+NOTE: live systemd needs a real init (your VM/devcontainer, not every
+container). If 'systemctl' says it can't talk to the bus, do the READ &
+AUTHOR rounds against the sample file -- the skill transfers exactly.
+
+==================================================================
+ PART 1 - SYSTEMD
+==================================================================
+
+------------------------------------------------------------------
+ ROUND A - CHECK ON THE CREW  ( systemctl status / is-* )
+------------------------------------------------------------------
+  systemctl status ssh           Full report on one service.
+  systemctl is-active ssh        One word: active / inactive.
+  systemctl is-enabled ssh       Will it clock in at next boot?
+  systemctl list-units --type=service        Everyone on shift now.
+  systemctl list-units --type=service --state=failed   Who fell over.
+
+  No live bus? Read a captured report instead:
+  cat ~/orbit-dojo/systemd/orbit.status.sample
+  Find these lines and say what each means:
+    "Loaded: ... enabled"   -> hired to clock in at boot
+    "Active: active (running)" -> currently on shift
+    "Main PID: 4242"        -> the process doing the work
+
+------------------------------------------------------------------
+ ROUND B - GIVE ORDERS  ( start / stop / restart / enable )
+------------------------------------------------------------------
+  SHARED-VM WARNING: system services are the WHOLE station's crew.
+  Starting/stopping them needs root and affects every student -- so on
+  the class VM you read these as the PATTERN, and do the real hands-on
+  with PER-USER services in Round D (systemctl --user, no root needed).
+
+  (Pattern -- on your OWN box pick a harmless service like cron:)
+  sudo systemctl start  <svc>    Begin the shift NOW.
+  sudo systemctl stop   <svc>    Send home NOW.
+  sudo systemctl restart <svc>   Stop then start (apply new config).
+  sudo systemctl reload <svc>    Re-read config WITHOUT a full restart.
+  sudo systemctl enable <svc>    Hire for every future boot.
+  sudo systemctl disable <svc>   Stop auto-hiring (still runs til stop).
+  enable --now / disable --now   Hire AND start (or fire AND stop) at once.
+
+  THE TRAP: start != enable.
+    start  = right now, this boot only.
+    enable = every boot from now on.
+  You almost always want BOTH:  sudo systemctl enable --now <svc>
+
+------------------------------------------------------------------
+ ROUND C - READ THE CREW'S DIARY  ( journalctl )
+------------------------------------------------------------------
+  journalctl -u ssh              All logs for one service.
+  journalctl -u ssh -e           Jump to the END (newest).
+  journalctl -u ssh -f           FOLLOW live (like tail -f). Ctrl-c out.
+  journalctl --since "1 hour ago"
+  journalctl -b                  Just this boot.
+  journalctl -p err              Only error-level and worse.
+  journalctl --user -u <name>    Logs for YOUR OWN (--user) services --
+                                 the version you can run without root.
+
+------------------------------------------------------------------
+ ROUND D - AUTHOR A NEW CREW MEMBER  ( a .service unit )
+------------------------------------------------------------------
+  Read the provided unit and name each part:
+  cat ~/orbit-dojo/systemd/orbit.service
+
+    [Unit]    Description + ordering (After=network.target)
+    [Service] Type, ExecStart (the actual command), Restart policy, User
+    [Install] WantedBy -- which "runlevel" pulls it in at boot
+
+  The system-wide workflow (needs root, hits the WHOLE box -- do this on
+  your OWN VM, NOT the shared class box):
+    sudo cp ~/orbit-dojo/systemd/orbit.service /etc/systemd/system/
+    sudo systemctl daemon-reload      <- ALWAYS after editing a unit
+    systemctl cat orbit               <- show the unit systemd loaded
+    (orbit won't truly run -- /srv/orbit/orbitd is a stub -- that's fine;
+     the goal is the lifecycle, not the daemon.)
+
+  THE SHARED-BOX WAY -- your OWN service, no root, invisible to others:
+    mkdir -p ~/.config/systemd/user
+    cat > ~/.config/systemd/user/hello.service <<'UNIT'
+    [Unit]
+    Description=My personal hello loop
+    [Service]
+    ExecStart=/bin/sh -c 'while true; do echo hi; sleep 5; done'
+    [Install]
+    WantedBy=default.target
+    UNIT
+    systemctl --user daemon-reload
+    systemctl --user enable --now hello
+    systemctl --user status hello        # yours alone
+    journalctl --user -u hello -f        # watch it; Ctrl-c to stop
+    systemctl --user disable --now hello # tidy up
+  Same five verbs, same lifecycle -- just scoped to home/<you>. (To keep
+  --user services alive after you log out: loginctl enable-linger $USER.)
+
+==================================================================
+ PART 2 - CRON   the alarm clock
+==================================================================
+
+------------------------------------------------------------------
+ ROUND E - THE FIVE FIELDS  ( decode before you write )
+------------------------------------------------------------------
+  Every cron line is five time fields, then the command:
+
+     *   *   *   *   *   command-to-run
+     |   |   |   |   |
+     |   |   |   |   +--- day of WEEK   (0-7, 0 and 7 = Sunday)
+     |   |   |   +------- MONTH         (1-12)
+     |   |   +----------- day of MONTH  (1-31)
+     |   +--------------- HOUR          (0-23)
+     +------------------- MINUTE        (0-59)
+
+  Symbols:   *  = every       ,  = list (1,15)
+             -  = range (1-5)  */n = "every n"  (*/15 = every 15)
+
+------------------------------------------------------------------
+ ROUND F - DECODE GYM  (say it in English, THEN check the key)
+------------------------------------------------------------------
+  Read each line. Out loud, in plain English, when does it fire?
+  Cover the ANSWER KEY at the bottom until you've tried all six.
+
+    C1)  0 3 * * *        /srv/orbit/backup.sh
+    C2)  */15 * * * *     /srv/orbit/healthcheck.sh
+    C3)  30 6 * * 1-5     /srv/orbit/standup.sh
+    C4)  0 9 1 * *        /srv/orbit/invoice.sh
+    C5)  0 0 * * 0        /srv/orbit/weekly-wipe.sh
+    C6)  0 */2 * * *      /srv/orbit/sweep.sh
+
+  Now WRITE these (then verify with crontab.guru on your phone):
+    W1) every day at 11:45 PM
+    W2) every Monday at 8:00 AM
+    W3) every 5 minutes
+    W4) the 1st and 15th of each month at noon
+    W5) once at reboot                      (hint: a special @keyword)
+
+------------------------------------------------------------------
+ ROUND G - DRIVE CRON FOR REAL  ( crontab )   no root needed
+------------------------------------------------------------------
+  crontab -l            List YOUR jobs. ("no crontab" = none yet.)
+  crontab -e            Edit them (opens your editor). Add this line:
+        * * * * * date >> ~/orbit-dojo/cron-proof.txt
+                        ...runs every minute. Save & quit.
+  Wait ~2 min, then:
+  cat ~/orbit-dojo/cron-proof.txt    Watch the timestamps pile up.
+  crontab -e            Delete that line so it stops. Save & quit.
+  crontab -r            Nuke ALL your cron jobs. (Careful -- no undo.)
+
+  Bonus shorthand keywords (instead of the 5 fields):
+    @reboot   @hourly   @daily   @weekly   @monthly
+  System-wide jobs live in:  /etc/crontab  and  /etc/cron.d/
+
+------------------------------------------------------------------
+ ANSWER KEY (Round F) -- no peeking until you've tried
+------------------------------------------------------------------
+  C1) 03:00 every day.
+  C2) Every 15 minutes, all day, every day.
+  C3) 06:30, Monday through Friday only.
+  C4) 09:00 on the 1st of every month.
+  C5) Midnight every Sunday.
+  C6) Top of every even hour (00:00, 02:00, 04:00 ...).
+  W1) 45 23 * * *        W2) 0 8 * * 1        W3) */5 * * * *
+  W4) 0 12 1,15 * *      W5) @reboot
+==================================================================
