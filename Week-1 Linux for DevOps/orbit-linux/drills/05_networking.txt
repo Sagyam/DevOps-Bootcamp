@@ -1,117 +1,262 @@
-==================================================================
- DRILL 05 - NETWORKING, REMOTE & TRANSFER   "The station's phone & post"
-==================================================================
-The machine is a HOUSE. It has:
-  - a street address           (its IP)
-  - many numbered DOORS         (ports)
-  - a doorman who decides who comes in/out  (the firewall)
-  - a phone book                (DNS)
-  - and a postal service        (scp / rsync) for shipping crates.
-Learn to knock, look up addresses, see which doors are open, and ship.
+================================================================================
+  LINUX NETWORKING FOR DEVOPS  
+================================================================================
+  Audience : DevOps bootcamp, shared Ubuntu VM
+  Mental model for the whole session — the FIVE W's of "why can't I connect?"
 
-NEEDS REAL TOOLS. On the student box first run:
-  sudo apt update && sudo apt install -y iproute2 iputils-ping \
-    dnsutils netcat-openbsd curl traceroute rsync openssh-client
+      WHERE  is it?       -> name resolution (DNS)        dig / host / getent
+      WAY    to it?       -> reachability / routing       ping / traceroute / mtr
+      WHO's  listening?   -> ports & sockets (L4)         ss / lsof / nc
+      WALL   in the way?  -> firewall                     ufw / iptables / nft
+      WORDS  working?     -> the app itself (L7)          curl -v
 
-------------------------------------------------------------------
- ROUND A - WHAT'S MY ADDRESS?  ( ip )
-------------------------------------------------------------------
-  ip a                 All interfaces & their IPs. Find your inet line.
-  hostname -I          Quick: just my IP(s).
-  ip route             Where does traffic LEAVE by? (the "default" line
-                       is your gateway -- the front gate of the LAN.)
-  ip -br a             Brief one-line-per-interface view.
+  Every command below hangs off one of those five questions. When something is
+  broken in production, you walk DOWN this list in order. 90% of "the service
+  is down!" tickets are solved before you reach WORDS.
 
-------------------------------------------------------------------
- ROUND B - IS ANYONE HOME OUT THERE?  ( ping  traceroute )
-------------------------------------------------------------------
-  ping -c 4 1.1.1.1        Knock 4 times on a known public host (by IP).
-                          Replies = the network path works.
-  ping -c 4 google.com    Knock by NAME. If THIS works but the IP knock
-                          already did, your DNS is fine too.
-  traceroute google.com   Follow the postal route, hop by hop, to the
-                          destination. See where packets slow or die.
+--------------------------------------------------------------------------------
+  ⚠️  SHARED-VM RULES (read before you touch anything)
+--------------------------------------------------------------------------------
+  * INSPECTION commands (ip a, ss, dig, ping, curl, traceroute) are READ-ONLY.
+    Everyone can run them at the same time. Run freely.
+  * MUTATING commands change state for EVERYONE on this box:
+        - sudo ufw <allow/deny>   -> can lock the whole class out of SSH
+        - sudo ip addr add/del    -> breaks the shared interface
+        - tcpdump                 -> can see other people's traffic (privacy!)
+    Do NOT run these on the shared VM. We will TALK through them, not execute.
+  * When you start a test server, pick a UNIQUE port (8000-8999) and KILL it
+    when you're done. Don't leave zombie servers running for the next person.
+  * nmap: only ever scan localhost or hosts you own. Never scan the internet.
 
-  DIAGNOSIS LADDER (the classic "is it the network?" climb):
-    1. ping 1.1.1.1 (IP)        works? -> internet path is up
-    2. ping google.com (name)   fails but #1 worked? -> it's DNS
-    3. curl https://...         fails but #2 worked? -> it's the app/TLS
+  Install anything missing first (don't let "command not found" stall you):
+        sudo apt update
+        sudo apt install -y dnsutils traceroute mtr-tiny netcat-openbsd nmap
 
-------------------------------------------------------------------
- ROUND C - THE PHONE BOOK  ( dig  nslookup  host )
-------------------------------------------------------------------
-  dig +short github.com        Name -> IP(s). Clean output.
-  dig github.com               Full answer: which record, which server.
-  dig +short -x 1.1.1.1        REVERSE: IP -> name.
-  host github.com              Friendlier one-liner.
-  cat /etc/resolv.conf         WHICH name server am I asking?
-  cat /etc/hosts               Local overrides (checked before DNS).
 
-------------------------------------------------------------------
- ROUND D - WHICH DOORS ARE OPEN?  ( ss  nc )
-------------------------------------------------------------------
-  ss -tulpn            The big one. LISTENING doors on THIS box:
-                         -t tcp  -u udp  -l listening  -p process  -n numeric
-                       Read which program owns each open port.
-  ss -tan              All TCP sockets and their states.
-  nc -zv 1.1.1.1 443   Knock on ONE door of a REMOTE host. "succeeded"
-                       = open. (-z scan, -v verbose.) Try port 22, 80, 443.
+================================================================================
+  PART 0 — WHO AM I ON THE NETWORK?  (interface basics)   ~15 min
+================================================================================
 
-------------------------------------------------------------------
- ROUND E - FETCH FROM THE OUTSIDE  ( curl  wget )
-------------------------------------------------------------------
-  curl -I https://example.com      HEADERS only (-I). Read the status line.
-  curl -s https://api.github.com/zen   -s = silent, just the body.
-  curl -L http://github.com        -L = follow redirects.
-  curl -o out.html https://example.com   Save to a file.
-  wget https://example.com/        Download a file/page to disk.
-  curl is the swiss-army API tool; wget is the "just download it" tool.
+  hostname                 Show this machine's name.
+  hostname -I              Show all its IP addresses (capital i).
+  hostnamectl              Full identity: hostname, OS, kernel, machine-id.
 
-------------------------------------------------------------------
- ROUND F - THE DOORMAN  ( ufw )   READ first, change carefully (sudo)
-------------------------------------------------------------------
-  sudo ufw status verbose      Is the firewall on? What's allowed?
-  Understand BEFORE you touch:
-    sudo ufw allow 22/tcp      open the SSH door
-    sudo ufw allow 80,443/tcp  open the web doors
-    sudo ufw deny 23           slam the telnet door shut
-    sudo ufw enable            turn the doorman ON
-  RULE: before 'ufw enable' on a REMOTE box, ALWAYS 'allow 22' first,
-  or you'll lock yourself out of your own house. People do this. Daily.
+  ip a            (= ip addr)    Show interfaces + their IP addresses.
+  ip l            (= ip link)    Show interfaces at the link layer (MAC, state).
+  ip r            (= ip route)   Show the routing table (where does traffic go?).
+  ip n            (= ip neigh)   Show the ARP table (IP <-> MAC on local net).
 
-------------------------------------------------------------------
- ROUND G - GO NEXT DOOR  ( ssh )
-------------------------------------------------------------------
-  ssh user@host                Open a secure phone line into another box.
-  ssh -p 2222 user@host        Non-standard port.
-  ssh -i ~/.ssh/orbit_key user@host   Use a specific key.
-  ssh user@host 'uptime'       Run ONE command remotely and come back.
-  Inside, you're on THAT machine: re-run Drill 01 to orient. exit to leave.
+      Memory aid:  ip  A L R N  =  Address, Link, Route, Neighbor.
 
-------------------------------------------------------------------
- ROUND H - SHIP THE CRATES  ( scp  rsync )
-------------------------------------------------------------------
-  Local practice (loopback is fine; copy within the dojo):
-  scp ~/orbit-dojo/srv/orbit/config.yaml ~/orbit-dojo/playground/
-                              Copy a file (works host->host too:
-                              scp file user@host:/path/).
-  scp -r ~/orbit-dojo/srv/orbit user@host:/tmp/   -r for directories.
+  Read an `ip a` dump:
+        lo               -> loopback, 127.0.0.1, the machine talking to itself.
+        eth0 / ens5 ...  -> the "real" NIC that reaches the outside world.
+        inet 10.0.0.5/24 -> this host's IPv4 and its subnet mask (/24).
+        state UP         -> link is alive.
 
-  rsync -av ~/orbit-dojo/srv/orbit/ ~/orbit-dojo/playground/orbit-copy/
-                              -a archive (perms+times), -v verbose.
-                              Run it TWICE: the 2nd time copies nothing
-                              -- rsync only ships what CHANGED. That's
-                              why it beats scp for big/repeat transfers.
-  rsync -avn src/ dst/        -n = DRY RUN. Show what WOULD move. Use
-                              this before every real rsync. Always.
+  The default route is the most important line in `ip r`:
+        default via 10.0.0.1 dev eth0
+        => "anything I don't have a specific route for, send to 10.0.0.1."
+        That gateway IP is your way OUT. No default route = no internet.
+  
+  Find all nearby SSIDs
+  sudo iw dev wlan0 scan | grep SSID
 
-------------------------------------------------------------------
- BOSS CHECK
-------------------------------------------------------------------
-  1. Your app can't reach github.com. Walk the diagnosis ladder
-     (Round B) out loud and name which command proves each rung.
-  2. Show every port this machine is LISTENING on, with the owning
-     process, in one command.
-  3. Resolve github.com to an IP without the noise.
-  4. Why must 'ufw allow 22' come before 'ufw enable' on a remote box?
-==================================================================
+  OLD vs NEW (you'll see both in the wild):
+        ifconfig   ->  ip a        (net-tools is deprecated; iproute2 is current)
+        route      ->  ip r
+        arp        ->  ip n
+        netstat    ->  ss
+
+
+================================================================================
+  PART 1 — WHERE IS IT?  (DNS / name resolution)          ~15 min
+================================================================================
+
+  Names are for humans; the network only moves packets between IP addresses.
+  DNS is the contacts app: "google.com" -> 142.250.x.x.
+
+  dig google.com                Full DNS query. The DevOps default.
+  dig +short google.com         Just the answer IP(s). Use this 90% of the time.
+  dig google.com MX             Look up a specific record type (MX, A, AAAA, TXT,
+                                NS, CNAME).
+  dig @1.1.1.1 google.com       Ask a SPECIFIC resolver. Great for "is it my DNS
+                                that's broken, or the record itself?"
+
+  host google.com               Quick, human-friendly lookup.
+  nslookup google.com           Older interactive tool. Still everywhere.
+
+  getent hosts google.com       Resolve the way APPLICATIONS actually do
+                                (honors /etc/hosts AND DNS via NSS). If `dig`
+                                works but `getent` doesn't, your app and your
+                                debug tool are resolving differently — a classic
+                                gotcha.
+
+  WHERE RESOLUTION IS CONFIGURED:
+        /etc/hosts            Static overrides. Checked BEFORE DNS. (This is how
+                              you fake a hostname locally, e.g. point
+                              api.myapp.com at 127.0.0.1 for testing.)
+        /etc/resolv.conf      Which DNS servers to ask. On modern Ubuntu this is
+                              a symlink to a stub at 127.0.0.53 (systemd-resolved).
+        resolvectl status     The real resolver config on systemd systems.
+
+  Debugging logic:
+        dig works, app can't resolve     -> check /etc/hosts and getent
+        dig fails, dig @1.1.1.1 works    -> your configured resolver is broken
+        everything fails                 -> it's WAY (reachability), not WHERE
+
+
+================================================================================
+  PART 2 — WAY TO IT?  (reachability & routing)           ~15 min
+================================================================================
+
+  ping 1.1.1.1              Is the host alive and reachable? (ICMP echo.)
+                            Ctrl+C to stop. Use an IP to take DNS out of the
+                            equation.
+  ping -c 4 1.1.1.1         Send exactly 4 packets and stop (scripting-friendly).
+
+      ping tells you the HOUSE exists and someone's home. It does NOT tell you
+      the shop inside (your service / port) is open. Many firewalls also drop
+      ICMP, so "ping fails" does not always mean "host is down."
+
+  traceroute 1.1.1.1        Show every hop (router) between you and the target.
+                            Find WHERE in the path traffic dies.
+  tracepath 1.1.1.1         Same idea, no sudo needed, also discovers MTU.
+
+  mtr 1.1.1.1               traceroute + ping combined, live, continuously.
+  mtr -r -c 10 1.1.1.1      Non-interactive report, 10 cycles. THE tool for
+                            intermittent packet loss. The hop where Loss%
+                            starts climbing is your suspect.
+
+  Reading hops: loss at the FINAL hop only = likely the destination/its firewall.
+  Loss starting MID-path and continuing = a real network problem out there.
+
+
+================================================================================
+  PART 3 — WHO'S LISTENING?  (ports & sockets, the L4 core)  ~30 min  ★ DAILY DRIVER
+================================================================================
+
+  This is where DevOps engineers actually live. A port is a numbered door on the
+  building. Port 22 = SSH door, 80 = HTTP door, 443 = HTTPS door, 5432 = Postgres.
+
+  ss -tlnp                  THE command. "What is listening, and which process?"
+                              -t  TCP
+                              -l  listening sockets only
+                              -n  numeric (don't waste time resolving names)
+                              -p  show the owning process (needs sudo for others')
+  ss -tulnp                 Add -u to include UDP listeners too.
+  ss -tnp                   Drop -l to see ESTABLISHED connections (who's talking
+                            to us RIGHT NOW).
+  ss -tnp state established  Filter by socket state explicitly.
+
+      Memory aid for -tulpn:  "Totally Understand Listening Ports Now."
+
+  lsof -i :8080             What process is using port 8080? (the "free my port!"
+                            tool when a deploy fails with "address already in use").
+  lsof -i -P -n             All network files, numeric ports & IPs, no name lookups.
+  fuser 8080/tcp            Quick PID(s) holding a TCP port.
+
+  netstat -tlnp             Deprecated ancestor of `ss`. Same flags. You'll still
+                            meet it on old boxes and in old runbooks.
+
+  /etc/services             Maps port numbers to names (80=http, 22=ssh...).
+
+  THE #1 PRODUCTION GOTCHA — bind address: 127.0.0.1 vs 0.0.0.0
+        In `ss` output the Local Address column tells you who can reach a service:
+            127.0.0.1:8080   -> ONLY this machine. A shop with no street door;
+                                 it serves people already inside the building.
+            0.0.0.0:8080     -> ALL interfaces. A street-facing door anyone on
+                                 the network can walk into.
+            10.0.0.5:8080    -> only that one specific interface.
+        "It works on the server with curl but nobody else can reach it" is almost
+        always a service bound to 127.0.0.1 that should be on 0.0.0.0. (Same idea
+        as publishing a Docker container's port — inside the container it binds
+        0.0.0.0, and you map it out with -p.)
+
+
+================================================================================
+  PART 4 — WALL IN THE WAY?  (firewall)                   ~10 min  (DEMO/TALK ONLY)
+================================================================================
+
+  >>> DO NOT EXECUTE THE MUTATING COMMANDS ON THE SHARED VM. Read-only is fine. <<<
+
+  sudo ufw status verbose       READ-ONLY. What is the firewall allowing/denying?
+  sudo ufw status numbered      Show rules with numbers (for deletion).
+
+  The mutating ones (know them, talk through them, don't run them here):
+        sudo ufw allow 80/tcp           Open the HTTP door.
+        sudo ufw allow 22/tcp           ALWAYS allow SSH *before* enabling.
+        sudo ufw deny 8080/tcp          Close a door.
+        sudo ufw enable / disable       Turn the firewall on/off.
+
+  Under the hood ufw is a friendly front-end for:
+        sudo iptables -L -n -v          The classic packet filter (read-only view).
+        sudo nft list ruleset           The modern nftables successor.
+
+  ⚠️ THE LESSON THAT BITES EVERYONE ONCE:
+        Enabling a default-deny firewall (or denying port 22) over an SSH session
+        cuts the branch you're sitting on — you lock yourself out instantly, with
+        no way back in except console/recovery. ALWAYS `ufw allow 22/tcp` first,
+        and on cloud VMs keep a serial console / recovery path open before you
+        change firewall rules. Test risky firewall changes with a "dead-man"
+        timer: schedule a rule-flush in 5 min, and cancel it only once you've
+        confirmed you're still connected.
+
+
+================================================================================
+  PART 5 — WORDS WORKING?  (application layer / L7)       ~20 min  ★ DAILY DRIVER
+================================================================================
+
+  Reachable + port open, but the app misbehaves? Now you actually talk to it.
+
+  curl https://example.com              Fetch the body. The Swiss-army knife.
+  curl -I https://example.com           Headers only (HEAD). Status line + headers.
+  curl -v https://example.com           VERBOSE: see the FULL conversation — DNS,
+                                        TCP connect, TLS handshake, request AND
+                                        response headers. Your single best L7
+                                        debugging flag. (It's "opening the letter
+                                        and reading both sides of the exchange.")
+  curl -L http://example.com            Follow redirects (3xx).
+  curl -X POST -d 'k=v' URL             Send a POST with data.
+  curl -H 'Authorization: Bearer X' URL Add a custom header (auth, content-type).
+  curl -o out.html URL                  Save to a file.
+  curl -s -o /dev/null -w '%{http_code}\n' URL
+                                        Print ONLY the status code. Perfect for
+                                        health checks and scripts.
+  curl --resolve api.app.com:443:10.0.0.5 https://api.app.com
+                                        Force a hostname to an IP without editing
+                                        /etc/hosts — test a new server behind a
+                                        DNS name before you cut over.
+
+  wget URL                              Download a file (good for fetching, not
+                                        for poking at APIs).
+  wget -qO- URL                         Print to stdout (quiet), like a basic curl.
+
+  RAW SOCKETS — netcat (nc):
+  nc -zv HOST 443                       "Is the port open?" Connect test, no data.
+                                        -z scan/zero-I-O, -v verbose. Faster and
+                                        cleaner than telnet for "is 443 open?".
+  nc -zv HOST 20-25                     Check a small range of ports on ONE host.
+  nc -l 9999                            Start a dumb listener on port 9999 (a
+                                        throwaway "server" to test connectivity).
+
+  nmap localhost                        Port scan (localhost ONLY on shared VM).
+  nmap -p 8000-9000 localhost           Scan a port range. See what's actually
+                                        listening from the outside's point of view.
+
+
+================================================================================
+  QUICK REFERENCE — "I need to..." -> command
+================================================================================
+  ...see my IPs                          ip a   /   hostname -I
+  ...find my gateway                      ip r   (the `default via` line)
+  ...resolve a name fast                  dig +short name
+  ...test a name against another DNS      dig @1.1.1.1 name
+  ...check a host is reachable            ping -c 4 host
+  ...find where the path breaks           mtr -r -c 10 host
+  ...see what's listening + the process   sudo ss -tulnp
+  ...find what's hogging a port           sudo lsof -i :PORT
+  ...check if a remote port is open       nc -zv host PORT
+  ...just get an HTTP status code         curl -s -o /dev/null -w '%{http_code}\n' URL
+  ...debug a full HTTP/TLS exchange       curl -v URL
+  ...view firewall rules                  sudo ufw status verbose   (READ-ONLY)
