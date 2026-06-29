@@ -1,0 +1,59 @@
+# =============================================================================
+#  VIM CHALLENGE  --  "Fix the broken compose file"
+# =============================================================================
+#  This docker-compose.yml is broken on purpose. Fix every TASK below using
+#  ONLY Vim keys (no mouse, no arrow keys). Each task names the keys to try.
+#  When you think a section is done, save with  :w  and move on.
+#  Stuck? Press  u  to undo. Want to bail entirely? :q!  then reopen.
+#
+#  TASKS
+#  -----
+#   1. The service name has a typo: "webb" should be "web".        (cw or x)
+#   2. There is a duplicate "image:" line under web. Delete one.   (dd)
+#   3. The "porst:" key is misspelled, should be "ports:".         (cw)
+#   4. Every "v1" image tag should be "v2".                        (:%s/v1/v2/g)
+#   5. The three "# environment" lines are commented out.
+#      Uncomment all three at once.                          (Ctrl-v block, d)
+#   6. The "db" service is missing a restart policy. Add a new
+#      line under it:   restart: always                            (o)
+#   7. Bonus: jump straight to the very bottom note.               (G)
+# =============================================================================
+
+services:
+
+  webb:
+    image: nginx:v1
+    image: nginx:v1
+    porst:
+      - "8080:80"
+    depends_on:
+      - db
+    # environment:
+    #   - APP_ENV=production
+    #   - LOG_LEVEL=info
+
+  worker:
+    image: myorg/worker:v1
+    command: ["python", "worker.py"]
+    depends_on:
+      - db
+
+  db:
+    image: postgres:v1
+    environment:
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=app
+
+  cache:
+    image: redis:v1
+    ports:
+      - "6379:6379"
+
+
+# -----------------------------------------------------------------------------
+# FINISH LINE: if you reached this comment with G and every task above is done,
+# you have officially edited a real config file in Vim. Save & quit:  :wq
+# Self-check: there should be NO "webb", NO "porst", NO "v1", NO leading "#" on
+# the web environment block, exactly ONE image line per service, and a
+# "restart: always" line under db.
+# -----------------------------------------------------------------------------

@@ -1,0 +1,262 @@
+===============================================================================
+                  VIM PRACTICE FILE  --  DevOps Bootcamp
+===============================================================================
+
+  HOW TO USE THIS FILE
+  --------------------
+  You are reading this INSIDE the editor. Good. Work top to bottom.
+  Each lesson explains a few keys, then gives you lines marked  >>>  to
+  practice on. Edit the  >>>  lines until they match what the lesson asks.
+  You cannot break anything: if you make a mess, press  u  to undo.
+
+  THE ONE RULE THAT MATTERS:  if keys do weird things, press  <Esc>.
+  <Esc> always takes you back to NORMAL mode (where keys are commands).
+
+  Save your progress any time with    :w   <Enter>
+  When you are completely done, quit with    :wq   <Enter>
+
+
+  -- LazyVim notes (read once) -------------------------------------------------
+  * Your leader key is the SPACEBAR. Tap <Space> and a little menu pops up
+    (that is "which-key" telling you your options). Press <Esc> to dismiss it.
+  * In INSERT mode a small completion popup may appear as you type. Ignore it,
+    or press <Ctrl-e> to close it. <Esc> always gets you out of insert mode.
+  * Auto-pairs is on: typing (  [  "  also adds the closing  )  ]  "  for you.
+    That is normal, not a bug.
+  * Handy LazyVim extras (try later, not now):
+        <Space>e   toggle the file explorer
+        <Space>ff  find a file by name
+        <Space>/   search text across files
+        :Lazy      open the plugin manager
+------------------------------------------------------------------------------
+
+
+===============================================================================
+  LESSON 0  --  THE FOUR MODES (just understand, nothing to type yet)
+===============================================================================
+
+  NORMAL   keys are commands (move, delete, copy). This is "home base".
+  INSERT   keys type text, like a normal editor. Enter with  i  exit with <Esc>.
+  VISUAL   you select text, then act on it. Enter with  v
+  COMMAND  bottom-line commands like  :w  :q  :%s  . Enter with  :
+
+  You spend most of your time in NORMAL mode. Beginners forget this and try
+  to type in normal mode -> chaos. When in doubt: <Esc>, then look down.
+
+
+===============================================================================
+  LESSON 1  --  SURVIVAL: insert text, then save & quit
+===============================================================================
+
+  i        start typing BEFORE the cursor      (insert)
+  <Esc>    stop typing, back to normal mode
+  :w       write (save) the file
+  :q       quit
+  :wq      save AND quit
+  :q!      quit and THROW AWAY changes (your escape hatch)
+
+  DO THIS: move down to the  >>>  line below. Press  i  , type your name,
+  press <Esc>. Then save with  :w <Enter>.
+
+  >>> My name is _______ and I am learning Vim.
+
+
+===============================================================================
+  LESSON 2  --  MOVING AROUND  (do NOT use the arrow keys; train your fingers)
+===============================================================================
+
+  h j k l    left, down, up, right         (j has a "hook" like a down arrow)
+  w          jump forward to next word
+  b          jump back a word
+  e          jump to end of word
+  0          jump to start of line   (the number zero)
+  $          jump to end of line
+  ^          jump to first non-blank character
+  gg         jump to top of file
+  G          jump to bottom of file
+  :42        jump to line 42
+
+  DO THIS: put your cursor anywhere on the line below. Practice hopping word
+  to word with  w  and  b . Land on the word "PIPELINE" using  w  presses.
+
+  >>> deploy the BUILD stage then the TEST stage then the PIPELINE finishes
+
+
+===============================================================================
+  LESSON 3  --  DELETING
+===============================================================================
+
+  x      delete the single character under the cursor
+  dw     delete from cursor to start of next word
+  dd     delete the whole line
+  d$     delete from cursor to end of line   (D does the same)
+
+  DO THIS (1): the line below has a doubled letter. Put the cursor on the extra
+  "o" and press  x . Result should read: "docker run".
+
+  >>> doocker run
+
+  DO THIS (2): delete the word "EXTRA" below using  dw  (cursor on the E).
+
+  >>> keep this EXTRA remove that word
+
+  DO THIS (3): this junk line should not exist. Put your cursor on it and
+  press  dd  to delete the entire line.
+
+  >>> rm -rf /   # <-- delete THIS LINE with dd (do not run it anywhere!)
+
+
+===============================================================================
+  LESSON 4  --  CHANGING  (delete + drop you into insert, in one move)
+===============================================================================
+
+  cw     change a word: deletes the word, then you type the new one
+  r      replace ONE character (press r, then the new char). No <Esc> needed.
+  C      change from cursor to end of line
+  s      substitute: delete the char and start typing
+
+  DO THIS (1): change "staging" to "production" below. Put cursor on the "s"
+  of staging, press  cw , type  production , press <Esc>.
+
+  >>> environment: staging
+
+  DO THIS (2): there is a typo "Dockre". Put the cursor on the "r", press  r
+  then... actually the letters are swapped. Use  cw  to retype the whole word
+  as "Docker".
+
+  >>> build with Dockre please
+
+
+===============================================================================
+  LESSON 5  --  INSERTING IN DIFFERENT PLACES
+===============================================================================
+
+  i      insert BEFORE the cursor
+  a      append AFTER the cursor
+  I      insert at the FIRST non-blank of the line
+  A      append at the END of the line  (super common, learn this one)
+  o      open a NEW line BELOW and start typing
+  O      open a new line ABOVE and start typing
+
+  DO THIS (1): use  A  to add  :8080  to the end of the line below.
+
+  >>> the web service listens on port
+
+  DO THIS (2): put your cursor on the line below and press  o  to open a fresh
+  line under it, then type:  echo "added with o"   then <Esc>.
+
+  >>> # open a new line below me
+
+
+===============================================================================
+  LESSON 6  --  UNDO, REDO, AND REPEAT  (your safety net + your superpower)
+===============================================================================
+
+  u         undo
+  <Ctrl-r>  redo
+  .         repeat the last change (the "dot command" -- incredibly useful)
+
+  DO THIS: delete the line below with  dd . Bring it back with  u . Delete it
+  again with  <Ctrl-r> ... or  dd  again. Play until undo/redo feels natural.
+
+  >>> practice undo and redo on this line, no consequences
+
+
+===============================================================================
+  LESSON 7  --  COPY (yank) AND PASTE
+===============================================================================
+
+  yy     yank (copy) the current line
+  yw     yank a word
+  p      paste AFTER the cursor / below the line
+  P      paste BEFORE the cursor / above the line
+
+  Vim says "yank" instead of "copy". Delete (d, x, dd) also copies, so you can
+  dd a line and p it somewhere else = cut & paste.
+
+  DO THIS: put your cursor on the TODO line below. Press  yy  to copy it, then
+  press  p  twice to make two more copies under it.
+
+  >>> TODO: replicate me with yy then p p
+
+
+===============================================================================
+  LESSON 8  --  VISUAL MODE  (select, then act)
+===============================================================================
+
+  v          start selecting characters (move with h j k l / w / e)
+  V          select whole lines
+  <Ctrl-v>   BLOCK select (a rectangle/column -- great for config files)
+  d          delete the selection      y  yank it      >  indent it
+
+  DO THIS (1): on the line below, press  V  to select the line, then  d  to
+  delete it. (Then  u  to bring it back if you like.)
+
+  >>> select this whole line with V then press d
+
+  DO THIS (2) -- BLOCK EDIT, the party trick:
+  The three lines below are commented out with a leading  #  and a space.
+  We want to UNCOMMENT all three at once.
+    1. Put the cursor on the  #  of the FIRST line below.
+    2. Press  <Ctrl-v>  to start a block.
+    3. Press  j  j  to extend the block down over all three  #  characters.
+    4. Press  l  to also grab the space after each # (so 2 chars wide).
+    5. Press  d  -- all three "# " prefixes vanish at once.
+
+  >>> # replicas: 3
+  >>> # image: nginx:latest
+  >>> # restart: always
+
+
+===============================================================================
+  LESSON 9  --  SEARCH
+===============================================================================
+
+  /word     search forward for "word", press <Enter>
+  ?word     search backward
+  n         jump to next match
+  N         jump to previous match
+  *         search for the word currently under the cursor
+
+  DO THIS: press  /error <Enter>  then tap  n  a few times to bounce between
+  every "error" in the block below.
+
+  >>> log line: error connecting to db
+  >>> log line: warning retrying
+  >>> log line: error timeout after 30s
+  >>> log line: info recovered
+  >>> log line: error giving up
+
+
+===============================================================================
+  LESSON 10  --  SEARCH & REPLACE  (the command every DevOps person uses)
+===============================================================================
+
+  :%s/old/new/g      replace EVERY "old" with "new" in the whole file
+  :%s/old/new/gc     same, but ask for Confirmation on each one (y/n/a/q)
+  :s/old/new/g       replace only on the CURRENT line
+
+  Read the  %  as "all lines", the trailing  g  as "every match on the line".
+
+  DO THIS: replace every "v1" with "v2" in the block below. Type exactly:
+        :%s/v1/v2/g    <Enter>
+  (Heads up: this replaces v1 EVERYWHERE in the file, which is fine here.)
+
+  >>> image: api:v1
+  >>> image: worker:v1
+  >>> image: cron:v1
+
+
+===============================================================================
+  GRADUATION
+===============================================================================
+
+  If you got here, you can already do 90% of real Vim editing. Next:
+  open the file  vim-devops-challenge.yml  and fix it using ONLY the keys
+  from this lesson. No mouse, no arrow keys -- prove it to yourself.
+
+  Save and quit this file now:   :wq  <Enter>
+
+  Keep the printed cheat sheet next to your keyboard for a week. After that
+  your fingers will remember and you won't need it. Happy hacking.
+===============================================================================
