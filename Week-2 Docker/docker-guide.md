@@ -9,33 +9,27 @@ first, then check whether you were right.
 
 ---
 
-## Before you start: session setup
+## Before you start
 
-Everyone in this class shares **one Docker daemon on one machine**. Docker keeps containers
-separate from the host, but it does **not** keep your work separate from your classmates'. If
-two of you both name a container `web` or both publish to port `8080`, you'll collide. So at
-the start of **every session**, claim your own identity:
+Docker is installed on your own machine, so the whole daemon is yours — nothing you name or
+publish collides with anyone else. First, confirm it's working:
 
 ```bash
-# Run this once each time you log in.
-export DKR=$USER                            # your personal prefix for everything
-export PB=$(( 20000 + (UID % 800) * 5 ))    # your five private ports: PB .. PB+4
-export COMPOSE_PROJECT_NAME=$DKR            # keeps your Compose resources separate
-echo "You are: $DKR | Your ports: $PB to $((PB+4))"
+docker version                # client and server (daemon) should both report a version
+docker run --rm hello-world   # pulls a tiny image and runs it once
 ```
 
-Then follow three rules the whole week:
+A few conventions this guide follows, so the commands line up as you read:
 
-1. **Name everything after yourself.** Containers `--name $DKR-web`, images `$DKR/app:1`,
-   networks `$DKR-net`, volumes `$DKR-data`. Also tag containers with `--label owner=$DKR` so
-   you can find your own later.
-2. **Use only your own ports** (`$PB` to `$PB+4`).
-3. **Only delete your own things.** Never run `docker system prune` or remove a shared base
-   image — that wipes other people's work too. To clean up just yours:
-   ```bash
-   docker rm -f $(docker ps -aq --filter "label=owner=$DKR") 2>/dev/null
-   docker volume rm $DKR-data 2>/dev/null; docker network rm $DKR-net 2>/dev/null
-   ```
+1. **Plain names.** Containers are named `web`, `db`, and so on; images `myapp:1`; networks
+   `appnet`; volumes `appdata`. Rename them however you like — just stay consistent.
+2. **Fixed ports.** Apps are published on `8080` (and `8081`–`8083` when we run several at once).
+   If something on your machine already uses one of these, pick another free port and adjust the
+   command.
+3. **Clean up when you're done.** Remove the containers you made by name, e.g.
+   `docker rm -f web`, and drop any network or volume with `docker network rm appnet` /
+   `docker volume rm appdata`. Because it's your own machine, `docker system prune` is now a safe
+   way to reclaim space — it removes stopped containers, unused networks, and dangling images.
 
 ---
 
@@ -75,8 +69,7 @@ That sentence is the whole architecture diagram.
 uname -r                              # the host's kernel
 docker run --rm alpine uname -r       # the container's kernel
 ```
-They are identical. There is no separate operating system inside the container. *Hint: this one
-fact is the entire difference between a container and a VM — make sure you can explain it.*
+They are identical. There is no separate operating system inside the container.
 
 **1.3 — See the isolation**
 ```bash
@@ -97,13 +90,12 @@ Namespaces decide what a container can *see*; cgroups decide how much it can *ta
 docker info | grep -i runtime
 ```
 You'll see `runc`. The chain is: your `docker` command → the `dockerd` daemon → `containerd`
-→ `runc` → the kernel. *Hint: Kubernetes stopped using Docker as its runtime and talks to
-containerd directly — and your images still run fine, because they follow the OCI standard.*
+→ `runc` → the kernel.
 
 ### If you finish early
 Run `docker run --rm -it alpine sh`, then inside type `cat /etc/os-release`. You appear to be
-"inside Alpine" even though the host is Ubuntu. Work out how that's possible with only one
-shared kernel. (Hint: it's a different set of files, not a different engine.)
+"inside Alpine" even though your host is a different Linux. Work out how that's possible with only
+one shared kernel. (Hint: it's a different set of files, not a different engine.)
 
 ### Check yourself
 1. Why does a container start in milliseconds but a VM in seconds?
@@ -145,49 +137,46 @@ Now you operate containers by hand: pull an image, run it, expose it, look insid
 docker pull nginx:1.27
 docker images | grep nginx
 ```
-*Hint: notice we pinned `:1.27` instead of `:latest`. `latest` quietly changes over time, which
-makes builds impossible to reproduce.*
 
 **2.2 — Run it in the background and reach it**
 ```bash
-docker run -d --name $DKR-web -p $PB:80 --label owner=$DKR nginx:1.27
-curl -s localhost:$PB | head -n 4
+docker run -d --name web -p 8080:80 nginx:1.27
+curl -s localhost:8080 | head -n 4
 ```
-You published your own port `$PB` to port `80` inside the container.
+You published your own port `8080` to port `80` inside the container.
 
 **2.3 — Walk the lifecycle**
 ```bash
-docker pause   $DKR-web && docker ps      # look for the Paused state
-docker unpause $DKR-web
-docker stop    $DKR-web && docker ps -a   # gone from `ps`, still listed in `ps -a`
-docker start   $DKR-web
+docker pause   web && docker ps      # look for the Paused state
+docker unpause web
+docker stop    web && docker ps -a   # gone from `ps`, still listed in `ps -a`
+docker start   web
 ```
 Match each command to the lifecycle diagram: Created, Running, Paused, Stopped, Removed.
 
 **2.4 — Look inside a running container**
 ```bash
-docker exec -it $DKR-web bash
+docker exec -it web bash
 # inside: ls /usr/share/nginx/html ; exit
-docker logs --tail 5 $DKR-web
+docker logs --tail 5 web
 ```
 `exec` opens a shell inside a container that's already running. `logs` shows what it has printed.
 
 **2.5 — One image, many containers**
 ```bash
 for n in 1 2 3; do
-  docker run -d --name $DKR-web-$n -p $((PB+n)):80 --label owner=$DKR nginx:1.27
+  docker run -d --name web-$n -p $((8080+n)):80 nginx:1.27
 done
-docker ps --filter "label=owner=$DKR"
+docker ps
 ```
-Three identical containers from one image. This is scaling, done by hand for now.
+Three identical containers from one image, on ports `8081`, `8082`, and `8083`. This is scaling,
+done by hand for now.
 
-**2.6 — Clean up your own containers**
+**2.6 — Clean up your containers**
 ```bash
-docker rm -f $(docker ps -aq --filter "label=owner=$DKR")
-docker ps -a --filter "label=owner=$DKR"     # should be empty
+docker rm -f web web-1 web-2 web-3
+docker ps -a                          # your exercise containers should be gone
 ```
-*Hint: you removed only the containers labelled with your name. Get used to this — it's how you
-stay out of your classmates' way.*
 
 ### If you finish early
 Run a throwaway container: `docker run -it --rm ubuntu bash`. Make a mess inside, then `exit`.
@@ -226,7 +215,7 @@ plus a `.dockerignore` file.
 
 ### The app you'll build
 
-Make a folder `~/$DKR-app` and put this file in it. It uses only Python's standard library, so
+Make a folder `~/myapp` and put this file in it. It uses only Python's standard library, so
 there's nothing to install:
 
 ```python
@@ -255,12 +244,11 @@ EXPOSE 8000
 CMD ["python", "server.py"]
 ```
 ```bash
-cd ~/$DKR-app
-docker build -t $DKR/app:1 .
-docker run -d --name $DKR-app -p $PB:8000 --label owner=$DKR $DKR/app:1
-curl -s localhost:$PB
+cd ~/myapp
+docker build -t myapp:1 .
+docker run -d --name app -p 8080:8000 myapp:1
+curl -s localhost:8080
 ```
-*Hint: watch the build output. Each instruction becomes a layer — that detail matters on Day 4.*
 
 **3.2 — Add a `.dockerignore`**
 ```bash
@@ -271,8 +259,8 @@ out of it.
 
 **3.3 — Override CMD**
 ```bash
-docker run --rm -e GREETING="custom message" $DKR/app:1
-docker run --rm $DKR/app:1 python -c "print('I replaced the CMD')"
+docker run --rm -e GREETING="custom message" myapp:1
+docker run --rm myapp:1 python -c "print('I replaced the CMD')"
 ```
 The second command replaced CMD entirely. That's how easily CMD is overridden.
 
@@ -286,12 +274,10 @@ COPY server.py .
 ENTRYPOINT ["python", "server.py"]
 ```
 ```bash
-docker build -f Dockerfile.entry -t $DKR/app:entry .
-docker run --rm $DKR/app:entry --help     # the arguments go TO python, they don't replace it
+docker build -f Dockerfile.entry -t myapp:entry .
+docker run --rm myapp:entry --help     # the arguments go TO python, they don't replace it
 ```
 With ENTRYPOINT, command-line arguments are appended to the program instead of replacing it.
-*Hint: use CMD when you want users to swap the command easily; use ENTRYPOINT when the program
-should always be the same and only its arguments change.*
 
 **3.5 — Stop running as root**
 Add these two lines before `CMD` in your first Dockerfile, then rebuild:
@@ -300,8 +286,8 @@ RUN useradd -m appuser
 USER appuser
 ```
 ```bash
-docker build -t $DKR/app:1 .
-docker run --rm $DKR/app:1 whoami     # should print appuser, not root
+docker build -t myapp:1 .
+docker run --rm myapp:1 whoami     # should print appuser, not root
 ```
 
 ### If you finish early
@@ -345,13 +331,11 @@ run as root.
 
 **4.1 — Watch the cache work**
 ```bash
-docker build -t $DKR/app:1 .         # first build: every step runs
-docker build -t $DKR/app:1 .         # nothing changed: every step says CACHED
+docker build -t myapp:1 .            # first build: every step runs
+docker build -t myapp:1 .            # nothing changed: every step says CACHED
 touch server.py                       # pretend you edited the source
-docker build -t $DKR/app:1 .         # only the COPY step and below rebuild
+docker build -t myapp:1 .            # only the COPY step and below rebuild
 ```
-*Hint: seeing `CACHED` appear and disappear is the whole point. This is why instruction order
-matters.*
 
 **4.2 — Break the cache the wrong way**
 Move `COPY server.py .` to be the first line right after `FROM`, then rebuild twice with an edit
@@ -381,8 +365,8 @@ USER nonroot
 ENTRYPOINT ["/app"]
 ```
 ```bash
-docker build -t $DKR/tiny:1 .
-docker images | grep -E "golang|$DKR/tiny"     # compare the builder vs the final image
+docker build -t tiny:1 .
+docker images | grep -E "golang|tiny"     # compare the builder vs the final image
 ```
 The final image contains only the compiled program — no compiler, no shell, no extra OS files.
 That gap is the entire reason multi-stage builds exist.
@@ -395,17 +379,19 @@ docker images | grep python
 Same language, very different sizes. Fewer packages means a smaller image and a smaller attack
 surface.
 
-**4.5 — Scan for vulnerabilities** *(only if the tool is installed)*
+**4.5 — Scan for vulnerabilities**
 ```bash
-docker scout cves $DKR/app:1          # or: trivy image $DKR/app:1
+docker scout cves myapp:1          # or: trivy image myapp:1
 ```
-Find a reported vulnerability, rebuild on an updated base image, and scan again. This is exactly
-the check a real pipeline runs before shipping (you'll see it on Day 7).
+This needs `docker scout` (bundled with recent Docker installs) or `trivy`. If you have neither,
+read along and come back to it. Find a reported vulnerability, rebuild on an updated base image,
+and scan again. This is exactly the check a real pipeline runs before shipping (you'll see it on
+Day 7).
 
 ### If you finish early
 Take your Day 3 Python image and shrink it as far as you can: a `-slim` base, a `.dockerignore`,
-a non-root `USER`, and combined `RUN` steps. Compare your final `docker images` size with a
-classmate's.
+a non-root `USER`, and combined `RUN` steps. Compare your final `docker images` size with where
+you started.
 
 ### Check yourself
 1. You changed one line of source. Why did the dependency install *not* run again (assuming your
@@ -443,43 +429,43 @@ mount with `-v $(pwd):/path`, and `--tmpfs`.
 
 **5.1 — Reach a container by name**
 ```bash
-docker network create $DKR-net
-docker run -d --name $DKR-db  --network $DKR-net --label owner=$DKR alpine sleep 3600
-docker run --rm     --network $DKR-net alpine getent hosts $DKR-db
+docker network create appnet
+docker run -d --name db --network appnet alpine sleep 3600
+docker run --rm       --network appnet alpine getent hosts db
 ```
-That last command resolved `$DKR-db` to an IP by name — no IP address was ever hard-coded. In a
-real app, your API would simply connect to `postgres://$DKR-db:5432`.
+That last command resolved `db` to an IP by name — no IP address was ever hard-coded. In a
+real app, your API would simply connect to `postgres://db:5432`.
 
 **5.2 — Show that the default network can't do this**
 ```bash
-docker run --rm alpine getent hosts $DKR-db    # not on your network, so no name resolution
+docker run --rm alpine getent hosts db    # not on your network, so no name resolution
 ```
 The default bridge has no name-based DNS. This is why you always create your own network.
 
 **5.3 — Keep data with a volume**
 ```bash
-docker volume create $DKR-data
-docker run --rm -v $DKR-data:/out alpine sh -c 'echo "version 1" > /out/log.txt'
-docker run --rm -v $DKR-data:/out alpine cat /out/log.txt    # still there
+docker volume create appdata
+docker run --rm -v appdata:/out alpine sh -c 'echo "version 1" > /out/log.txt'
+docker run --rm -v appdata:/out alpine cat /out/log.txt    # still there
 ```
 The container that wrote the file is gone, but the file remains. That's a volume.
 
 **5.4 — Lose data without one**
 ```bash
-docker run --name $DKR-tmp alpine sh -c 'echo secret > /tmp/note'
-docker rm $DKR-tmp
+docker run --name tmp alpine sh -c 'echo secret > /tmp/note'
+docker rm tmp
 ```
-The file was on the writable layer, so removing the container destroyed it. *Hint: compare this
-with 5.3 — that contrast is the most important storage lesson of the week.*
+The file was on the writable layer, so removing the container destroyed it. Compare this with
+5.3 — that contrast is the most important storage lesson of the week.
 
 **5.5 — Edit files live with a bind mount**
 ```bash
-mkdir -p ~/$DKR-site && echo "<h1>edit me live</h1>" > ~/$DKR-site/index.html
-docker run -d --name $DKR-live -p $((PB+1)):80 --label owner=$DKR \
-  -v ~/$DKR-site:/usr/share/nginx/html:ro nginx:1.27
-curl -s localhost:$((PB+1))
-echo "<h1>changed on the host</h1>" > ~/$DKR-site/index.html
-curl -s localhost:$((PB+1))          # changes immediately, no rebuild
+mkdir -p ~/mysite && echo "<h1>edit me live</h1>" > ~/mysite/index.html
+docker run -d --name live -p 8081:80 \
+  -v ~/mysite:/usr/share/nginx/html:ro nginx:1.27
+curl -s localhost:8081
+echo "<h1>changed on the host</h1>" > ~/mysite/index.html
+curl -s localhost:8081          # changes immediately, no rebuild
 ```
 A bind mount maps a folder on the host straight into the container — useful while developing.
 
@@ -503,8 +489,8 @@ addr` and confirm the container has no network.
 
 ### Common mistake
 Cleanup needs extra steps today. Removing your containers doesn't remove your network or volume
-— those need `docker network rm $DKR-net` and `docker volume rm $DKR-data`. Left-behind volumes
-are the quiet way a shared machine runs out of disk.
+— those need `docker network rm appnet` and `docker volume rm appdata`. Left-behind volumes are
+the quiet way a machine runs out of disk.
 
 ---
 
@@ -527,33 +513,32 @@ multi-container app from a single file.
 
 `docker tag/push/pull`, `docker login`, and `docker compose up -d / ps / down / logs / exec`.
 
-*Your instructor is running a class registry at `localhost:5000`. You'll push to it instead of
-Docker Hub, so you don't need an account.*
-
 ### Steps
 
-**6.1 — Push your image to the registry**
+**6.1 — Run your own registry, then push to it**
+You don't need a Docker Hub account for this — run a registry on your own machine (it's just
+another container) and push to it. Keep it running through Day 7; you'll use it there too.
 ```bash
-docker tag  $DKR/app:1 localhost:5000/$DKR/app:1
-docker push localhost:5000/$DKR/app:1
+docker run -d -p 5000:5000 --name registry registry:2
+docker tag  myapp:1 localhost:5000/myapp:1
+docker push localhost:5000/myapp:1
 ```
-*Hint: note the `sha256` digest it prints back — that's the exact-bytes fingerprint of your image.*
 
 **6.2 — Pull it back fresh**
 ```bash
-docker rmi localhost:5000/$DKR/app:1           # remove your LOCAL copy
-docker run --rm localhost:5000/$DKR/app:1 echo "pulled from the registry"
+docker rmi localhost:5000/myapp:1              # remove your LOCAL copy
+docker run --rm localhost:5000/myapp:1 echo "pulled from the registry"
 ```
 You deleted the local image and Docker fetched it from the registry. Your image now lives
-somewhere portable, not just on this machine.
+somewhere portable, not just baked into your shell history.
 
 **6.3 — Describe a whole stack in one file**
-In `~/$DKR-app`, create `compose.yaml`:
+In `~/myapp`, create `compose.yaml`:
 ```yaml
 services:
   web:
     build: .
-    ports: ["${PB}:8000"]
+    ports: ["8080:8000"]
     environment:
       GREETING: "served by the stack"
     depends_on: [cache]
@@ -561,13 +546,12 @@ services:
     image: redis:7-alpine
 ```
 ```bash
-PB=$PB docker compose up -d
+docker compose up -d
 docker compose ps
-curl -s localhost:$PB
+curl -s localhost:8080
 ```
-Because you set `COMPOSE_PROJECT_NAME=$DKR` during setup, all of your Compose resources are
-prefixed with your name and won't collide with anyone else's. Compose also creates a network for
-the project automatically, which is why `web` can reach `cache` by name.
+Compose creates a project (named after the folder) and a network for it automatically, which is
+why `web` can reach `cache` by name.
 
 **6.4 — Operate the stack**
 ```bash
@@ -576,8 +560,6 @@ docker compose logs --tail 20 web
 docker compose exec cache redis-cli ping  # PONG
 docker compose down                       # stops and removes the whole stack
 ```
-*Hint: remember the `for` loop you wrote on Day 2 to run three containers? Compose just did the
-same thing declaratively, and tears it all down with one command.*
 
 ### If you finish early
 Add a `healthcheck` to the `cache` service, and make `web` depend on it with `condition:
@@ -612,41 +594,41 @@ Everything connects today: build, ship, and run, automatically and at scale.
 
 ### Commands you'll use
 
-`docker scout` or `trivy` with a fail-on-critical flag, a small shell script, and (in the
-demonstration) `docker swarm init` and `docker service create/scale/update/ps`.
+`docker scout` or `trivy` with a fail-on-critical flag, a small shell script, and
+`docker swarm init` and `docker service create/scale/update/ps`.
 
 ### Steps
 
 **7.1 — Build the pipeline as a script**
-A pipeline is these steps in order. Save this as `deploy.sh` in `~/$DKR-app` and run it:
+A pipeline is these steps in order. Make sure your registry from Day 6 is still running
+(`docker ps | grep registry`), then save this as `deploy.sh` in `~/myapp` and run it:
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
 SHA=$(date +%s)                     # stands in for a git commit ID
-REG=localhost:5000/$DKR/app
+REG=localhost:5000/myapp
 
 echo "build";  docker build -t $REG:$SHA .
 echo "test";   docker run --rm $REG:$SHA python -c "print('tests pass')"
 echo "scan";   docker scout cves --exit-code --only-severity critical $REG:$SHA \
                  || { echo "critical vulnerabilities found — stopping, nothing ships"; exit 1; }
 echo "push";   docker push $REG:$SHA
-echo "deploy"; SHA=$SHA docker compose up -d
+echo "deploy"; docker compose up -d
 echo "shipped $REG:$SHA"
 ```
 ```bash
 chmod +x deploy.sh && ./deploy.sh
 ```
-*Hint: CI/CD isn't a special tool — it's discipline written as a script. The scan step is a
-gate: try pointing your Dockerfile at an old, vulnerable base image and watch the deploy never
-run. (If the scan tool isn't installed, replace that line with a placeholder and note where the
-real gate goes.)*
+The scan step is a gate: try pointing your Dockerfile at an old, vulnerable base image and watch
+the deploy never run.
 
-**7.2 — A self-healing cluster (instructor demonstration)**
-A single machine runs only one cluster, so you'll watch this rather than run it yourself. Follow
-along on the projector:
+**7.2 — A self-healing cluster you run yourself**
+On the shared machine this used to be a demo — but Docker turns your own machine into a
+single-node cluster, so now you run it. (First `docker compose down` if your Day 6 stack is still
+up, so port `9090` is free.)
 ```bash
 docker swarm init
-docker service create --name fleet --replicas 3 -p 8080:80 nginx:1.27
+docker service create --name fleet --replicas 3 -p 9090:80 nginx:1.27
 docker service ps fleet                       # three tasks scheduled
 
 docker rm -f $(docker ps -q --filter name=fleet | head -1)   # kill one
@@ -658,11 +640,18 @@ docker service update --image nginx:1.27 fleet  # rolling update
 The key idea to take away: you declared three replicas; one was killed; it stayed three. You
 state the desired result, and the orchestrator keeps it true.
 
+When you're done, tear it all down:
+```bash
+docker service rm fleet
+docker swarm leave --force
+docker rm -f registry        # done with the local registry from Day 6
+```
+
 **7.3 — Swarm versus Kubernetes**
 Using the slide's comparison: Swarm is built into Docker and simple to learn; Kubernetes is the
-industry standard at scale, far more powerful, and harder to learn. *Hint: the images you built
-this week run unchanged on either one — orchestration changes how containers are managed, not
-what's inside them. Kubernetes is the next module.*
+industry standard at scale, far more powerful, and harder to learn. The images you built this
+week run unchanged on either one — orchestration changes how containers are managed, not what's
+inside them.
 
 **7.4 — Say the whole workflow from memory**
 > Write a recipe (Dockerfile), build an image, ship it through a registry and a pipeline, run it
