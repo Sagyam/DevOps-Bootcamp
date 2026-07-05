@@ -346,64 +346,523 @@ the container handles stop signals.
 
 ---
 
+
 # Day 4 — Smaller, Faster, Safer Images
 
-**Slides:** Layers and the build cache · Best practices · Multi-stage builds · Security hardening
-
-Anyone can build an image. Today you make one that rebuilds quickly, stays small, and doesn't
-run as root.
-
-### Key ideas
-
-- Each instruction adds a **layer**, stacked like pallets. Change a lower pallet and every
-  pallet above it has to be re-stacked — that's a cache miss cascading down.
-- So the ordering rule is: **install dependencies first, copy your changing source code last.**
-  Then editing your code never forces the slow dependency install to run again.
-- A **multi-stage build** compiles in a big image but ships only the finished artifact in a tiny
-  one.
-
-
-
-**4.4 — Compare base image sizes**
-
-```bash
-docker pull python:3.12 ; docker pull python:3.12-slim ; docker pull python:3.12-alpine
-docker images | grep python
-```
-
-Same language, very different sizes. Fewer packages means a smaller image and a smaller attack
-surface.
-
-**4.5 — Scan for vulnerabilities**
-
-```bash
-docker scout cves myapp:1          # or: trivy image myapp:1
-```
-
-This needs `docker scout` (bundled with recent Docker installs) or `trivy`. If you have neither,
-read along and come back to it. Find a reported vulnerability, rebuild on an updated base image,
-and scan again. This is exactly the check a real pipeline runs before shipping (you'll see it on
-Day 7).
-
-### If you finish early
-
-Take your Day 3 Python image and shrink it as far as you can: a `-slim` base, a `.dockerignore`,
-a non-root `USER`, and combined `RUN` steps. Compare your final `docker images` size with where
-you started.
-
-### Check yourself
-
-1. You changed one line of source. Why did the dependency install *not* run again (assuming your
-   Dockerfile is ordered well)?
-2. What does a multi-stage build leave out of the final image, and why is that good?
-3. Name three things from the security slide you'd check before shipping an image.
-
-### Common mistake
-
-Putting `COPY . .` near the top "to be safe." It busts the cache on every code change and makes
-rebuilds slow. The order is: dependency files, then install, then the rest of the source last.
+> **DevOps Bootcamp · Docker Module**
 
 ---
+
+## Learning objectives
+
+By the end of today, a student can:
+
+1. Explain **why** image size and layer count matter (build time, push/pull, attack surface, cost).
+2. Convert a naive single-stage Dockerfile into a **multi-stage build**.
+3. **Measure and compare** image sizes with `docker images`, `docker history`, and `dive`.
+4. Diagnose the classic **"it builds but won't run"** failure — and know *why* the error message lies to you.
+5. Identify and fix the **common mistakes that silently break layer caching**.
+6. **Scan** an image for vulnerabilities with `docker scout` (and Trivy) and act on the results.
+
+
+---
+
+A big image is not just "storage." It costs you on every axis:
+
+- **Build time** — more layers, more to rebuild when cache misses.
+- **Push/pull time** — CI pushes it, every node pulls it, every deploy waits on it. A 1 GB image vs a 15 MB image is the difference between a 3-minute rollout and a 5-second one.
+- **Attack surface** — every package in the image is something that can have a CVE. A full `node:22` image has *hundreds* of OS packages you never use. `scratch` has zero.
+- **Cost** — registry storage, egress, and slower autoscaling all show up on a bill.
+
+The whole lesson is one idea: **ship only what runs, nothing that builds.**
+
+---
+
+## 1 · Baseline — the naive image
+
+We'll use a tiny Go HTTP server as our running example, because it makes the size story dramatic *and* it's the perfect vehicle for today's "won't run" bug. (A Node version appears in §4 for the interpreted-language case.)
+
+**Project layout**
+
+```
+shortlink/
+├── go.mod
+├── go.sum
+└── cmd/server/main.go
+```
+
+**`cmd/server/main.go`** (minimal, no external deps):
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+)
+
+func main() {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "hello from shortlink")
+	})
+	log.Println("listening on :8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+```
+
+**The naive Dockerfile** — `Dockerfile.naive`:
+
+```dockerfile
+FROM golang:1.23
+WORKDIR /src
+COPY . .
+RUN go build -o /app/server ./cmd/server
+EXPOSE 8080
+CMD ["/app/server"]
+```
+
+Build it and look at the damage:
+
+```bash
+docker build -f Dockerfile.naive -t shortlink:naive .
+docker images shortlink:naive
+```
+
+You'll see something around **800 MB – 1 GB**. The *entire Go toolchain* — compiler, stdlib source, git, build caches — is riding along in production, even though production only needs one ~10 MB binary.
+
+> **Teaching beat:** ask the room *"what in this image does the running program actually use?"* Answer: the binary. Everything else is build-time baggage. That's the problem multi-stage solves.
+
+---
+
+## 2 · Multi-stage builds
+
+A multi-stage Dockerfile has **more than one `FROM`**. Each `FROM` starts a fresh stage. You do the heavy building in an early stage, then **copy just the finished artifact** into a clean, tiny final stage. The build stage is discarded — it never ships.
+
+`Dockerfile`:
+
+```dockerfile
+# ---- Stage 1: build ----
+FROM golang:1.23 AS builder
+WORKDIR /src
+
+# copy dependency manifests first (see §6 — caching)
+COPY go.mod go.sum ./
+RUN go mod download
+
+# now the source
+COPY . .
+
+# static binary — remember CGO_ENABLED=0, this matters in §3
+RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/server
+
+# ---- Stage 2: runtime ----
+FROM scratch
+COPY --from=builder /server /server
+EXPOSE 8080
+ENTRYPOINT ["/server"]
+```
+
+Key syntax:
+
+- `FROM golang:1.23 AS builder` — names the stage so we can reference it.
+- `COPY --from=builder /server /server` — pulls one file out of the build stage into the final image.
+- `FROM scratch` — the empty base. Literally nothing: no shell, no libc, no package manager.
+
+Build and compare:
+
+```bash
+docker build -t shortlink:multi .
+docker images | grep shortlink
+```
+
+```
+shortlink   naive   ...   ~850MB
+shortlink   multi   ...   ~11MB
+```
+
+Roughly **a 75× reduction**, and the runtime image contains exactly one thing an attacker could target: your binary.
+
+> The build stage still exists on your machine as cache — that's a feature. Rebuilds reuse it. It just never becomes part of the shipped image.
+
+---
+
+## 3 · "It builds but won't run" — the bug from last time
+
+This is the section that matters most, because it's the exact failure that can derail a live session. We're going to **cause it on purpose**, read the error carefully, and fix it — so students internalize the *why*.
+
+### Reproduce the failure
+
+Take the multi-stage Dockerfile above and **remove `CGO_ENABLED=0`**:
+
+```dockerfile
+RUN GOOS=linux go build -o /server ./cmd/server   # no CGO_ENABLED=0
+```
+
+For a program that pulls in anything using cgo (a SQLite driver, certain `net` configurations, etc.), Go produces a **dynamically linked** binary. Build succeeds. Then:
+
+```bash
+docker build -t shortlink:broken .
+docker run --rm shortlink:broken
+```
+
+```
+exec /server: no such file or directory
+```
+
+### Why the error is lying to you
+
+The file is *right there.* You can prove it. So what "does not exist"?
+
+A dynamically linked ELF binary doesn't start on its own — the kernel hands it to a **dynamic loader** (`/lib64/ld-linux-x86-64.so.2`) which then pulls in `libc`. In a `scratch` image, **none of those files exist.** The kernel tries to `exec` the loader named inside your binary, can't find it, and returns `ENOENT` — which the shell surfaces as *"no such file or directory."* The message is about the **missing interpreter**, not your binary.
+
+You get the **same error with `FROM alpine`** for a different reason: Alpine uses **musl** libc, not **glibc**. A glibc-linked binary asks for a glibc loader that Alpine doesn't have. Same `no such file or directory`, same root cause: **the runtime stage doesn't have the libc your binary was linked against.**
+
+### The whole family of "builds but won't run" errors
+
+Give students this table — it's the debugging cheat sheet:
+
+| Error at `docker run` | What it really means | Fix |
+|---|---|---|
+| `exec /app: no such file or directory` (file *is* present) | Dynamic loader / libc missing in final stage (glibc binary → scratch or alpine/musl) | `CGO_ENABLED=0` for a static binary, **or** use a matching-libc base (`debian:bookworm-slim`, `distroless`) |
+| `exec /app: exec format error` | Architecture mismatch (arm64 binary on amd64 host, or vice-versa — common on Apple Silicon) | Build for the target: `docker build --platform linux/amd64 …` / use `buildx` |
+| `no such file or directory` (file genuinely absent) | Wrong `COPY --from` source/dest path; binary landed elsewhere than `CMD` expects | Verify paths; use absolute paths; `docker run --rm -it img ls -l /` |
+| `permission denied` | Copied file isn't executable | `COPY --chmod=0755 …` or `RUN chmod +x /server` |
+| `exec: "sh": ... not found` | Shell-form `CMD` in an image with no shell (scratch/distroless) | Use **exec form** with the binary directly: `ENTRYPOINT ["/server"]` |
+| App starts, then `x509: certificate signed by unknown authority` | No CA certificates in a minimal base | Copy certs from builder, or use a base that includes them (distroless does) |
+
+### The debugging *method* (teach the process, not just the fix)
+
+1. **Read the exact error. Don't guess.** The message *is* the diagnosis once you know the table above.
+2. **Isolate: is it the binary or the runtime stage?** Run the *builder* stage directly:
+   ```bash
+   docker build --target builder -t shortlink:builder .
+   docker run --rm shortlink:builder /server
+   ```
+   If it runs here but not in the final image → the problem is in your runtime stage (missing loader/libc/certs), not your code.
+3. **Check whether the binary is static:**
+   ```bash
+   docker run --rm shortlink:builder ldd /server
+   ```
+   `not a dynamic executable` → static, safe for `scratch`. A list of `.so` files → dynamic, needs a matching libc.
+4. **If the final image has a shell** (alpine/slim), poke around inside:
+   ```bash
+   docker run --rm -it shortlink:multi sh
+   ```
+   If it's `scratch`/distroless (no shell), temporarily swap the final `FROM` to `busybox` or `alpine` just to inspect, then switch back.
+5. **Confirm what Docker actually runs:**
+   ```bash
+   docker inspect --format '{{.Config.Entrypoint}} {{.Config.Cmd}} {{.Config.WorkingDir}}' shortlink:multi
+   ```
+
+### The fix
+
+Put `CGO_ENABLED=0` back. Now `ldd` reports a static binary and it runs in `scratch`. If you genuinely need cgo (native SQLite, etc.), **don't** use `scratch` — use a base with the matching libc:
+
+```dockerfile
+# needs cgo/glibc → don't ship to scratch
+FROM gcr.io/distroless/base-debian12
+COPY --from=builder /server /server
+ENTRYPOINT ["/server"]
+```
+
+> **Instructor note:** demo the broken build *live and on purpose*. Watching the `no such file or directory` error appear and then explaining that the file exists is one of those moments that sticks for years. It reframes a scary error as a known, named thing.
+
+---
+
+## 4 · Choosing a base image
+
+The final-stage base is the single biggest lever on size *and* CVE count. From heaviest to lightest:
+
+| Base | Size (approx) | Has shell? | libc | Use when |
+|---|---|---|---|---|
+| `golang:1.23` / `node:22` | 800 MB–1 GB | yes | glibc | build stage only |
+| `debian:bookworm-slim` | ~75 MB | yes | glibc | need glibc + a shell/tools |
+| `alpine:3.20` | ~8 MB | yes (`sh`) | **musl** | tiny + you want a shell; watch the musl trap |
+| `gcr.io/distroless/*` | ~20 MB | **no** | glibc | production default: no shell, has certs + nonroot user |
+| `scratch` | 0 | no | none | fully static binaries only (Go with `CGO_ENABLED=0`, Rust musl) |
+
+Two traps worth calling out:
+
+- **Alpine + native modules.** If you build native code against glibc and then run on Alpine (musl), it breaks — same family of error as §3. Keep the libc consistent from build to runtime.
+- **Distroless has no shell.** Great for security (nothing to `exec` into), but you can't `docker exec … sh` to debug. Use the debugging method from §3 instead, or the `:debug` distroless variants during development.
+
+### The interpreted-language case (Node)
+
+Multi-stage still helps, but the shape is different — you're separating **dev dependencies + build tooling** from **production runtime**:
+
+```dockerfile
+# ---- deps: production node_modules only ----
+FROM node:22-slim AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+# ---- build: needs dev deps to compile ----
+FROM node:22-slim AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# ---- runtime ----
+FROM node:22-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=deps  /app/node_modules ./node_modules
+COPY --from=build /app/dist         ./dist
+USER node
+EXPOSE 3000
+CMD ["node", "dist/server.js"]
+```
+
+Node's version of "builds but won't run":
+
+- `Cannot find module 'express'` → forgot to copy `node_modules` into the runtime stage.
+- Wrong `CMD` path (`server.js` vs `dist/server.js`).
+- **Native addons** (`bcrypt`, `sharp`) built on Debian/glibc then copied into an Alpine/musl runtime → the addon fails to load. Same libc lesson as Go.
+
+---
+
+## 5 · Comparing sizes properly
+
+Don't just eyeball `docker images` — teach students to *see where the weight is*.
+
+**Overall size:**
+```bash
+docker images | grep shortlink
+```
+
+**Per-layer breakdown** — find the fat layer:
+```bash
+docker history shortlink:multi
+```
+Each row is a layer with its size. This is how you catch "why is there a 200 MB layer in my 'small' image?"
+
+**Interactive exploration with `dive`:**
+```bash
+# install: https://github.com/wagoodman/dive
+dive shortlink:multi
+```
+`dive` gives you a TUI showing every layer's contents and an **efficiency score** — it flags files that are added in one layer and deleted in another (wasted space that still counts toward image size).
+
+**Total disk footprint:**
+```bash
+docker system df
+```
+
+**Have students fill in this table** as a lab deliverable:
+
+| Image | Base | Size | # layers | CVEs (C/H) |
+|---|---|---|---|---|
+| `shortlink:naive` | `golang:1.23` | | | |
+| `shortlink:multi` | `scratch` | | | |
+| `shortlink:distroless` | `distroless/static` | | | |
+
+Filling this in themselves makes the tradeoffs concrete.
+
+---
+
+## 6 · Caching — how it works and how it breaks
+
+### How layer caching works
+
+Each Dockerfile instruction produces a layer. Docker computes a cache key from the instruction **and** the files it touches. On rebuild, if the key is unchanged, Docker reuses the cached layer. **The moment one layer's key changes, that layer and *every layer after it* are rebuilt.** That last sentence is the whole mental model — order matters enormously.
+
+### Mistake 1 — `COPY . .` before installing dependencies
+
+```dockerfile
+# BAD
+COPY . .
+RUN npm ci          # or: go mod download / pip install
+```
+
+Any source-code change alters the `COPY . .` layer, which busts the cache, which forces `npm ci` to run **every single build**. Dependencies rarely change; source changes constantly. So copy the *manifests* first:
+
+```dockerfile
+# GOOD — dependency install is cached until package files change
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .            # source last
+```
+
+Go equivalent (already in our §2 Dockerfile):
+```dockerfile
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+```
+
+**Principle: order instructions from least-frequently-changed to most-frequently-changed.**
+
+### Mistake 2 — splitting `apt-get update` from `apt-get install`
+
+```dockerfile
+# BAD
+RUN apt-get update
+RUN apt-get install -y curl
+```
+
+The `update` layer gets cached. Weeks later you add a package; `update` is still cached (stale package index), so `install` runs against outdated metadata → "package not found" or you get old versions. Always combine them, and clean up in the same layer:
+
+```dockerfile
+# GOOD
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+```
+
+(`--no-install-recommends` and the `rm` also shrink the layer — smaller *and* correct.)
+
+### Mistake 3 — no `.dockerignore`
+
+Without one, `COPY . .` sucks in `.git/`, `node_modules/`, local build output, logs — all of which change constantly and **bust your cache every build** (and bloat the build context you send to the daemon). Minimum viable `.dockerignore`:
+
+```
+.git
+node_modules
+dist
+*.log
+Dockerfile*
+.env
+```
+
+### Mistake 4 — cache-busting `ARG`/`ENV` placed too high
+
+```dockerfile
+# BAD — invalidates everything below on every build
+ARG BUILD_DATE
+ENV BUILD_DATE=$BUILD_DATE
+COPY go.mod go.sum ./
+RUN go mod download
+```
+
+A value that changes every build (timestamp, commit SHA) placed early invalidates all subsequent layers. Put frequently-changing `ARG`/`ENV` **as late as possible**, after the expensive cached steps.
+
+### Bonus — BuildKit cache mounts (mention, don't dwell)
+
+BuildKit can persist a package cache *across* builds without baking it into a layer:
+
+```dockerfile
+# syntax=docker/dockerfile:1
+RUN --mount=type=cache,target=/root/.npm  npm ci
+RUN --mount=type=cache,target=/go/pkg/mod go build -o /server ./cmd/server
+```
+
+This keeps download caches warm even when the layer itself is invalidated. Good "next level" material once the basics land.
+
+---
+
+## 7 · Scanning for vulnerabilities
+
+This ties the whole lesson together: **fewer packages → fewer CVEs.** A scan on `shortlink:naive` vs `shortlink:multi` makes that visible.
+
+> Note: the old `docker scan` (Snyk-based) is deprecated. The current built-in is **`docker scout`**, bundled with Docker Desktop 4.17+. On Linux without Desktop, install the plugin:
+> `curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --`
+
+### Quick overview
+
+```bash
+docker scout quickview shortlink:naive
+```
+
+Gives a one-line severity summary (`C`ritical / `H`igh / `M`edium / `L`ow) for your image **and its base image**, plus base-image update suggestions. Run it on both images and watch the numbers collapse for the multi-stage one.
+
+### Detailed CVE list
+
+```bash
+docker scout cves shortlink:naive
+```
+
+Useful filters for teaching and for CI:
+
+```bash
+# only the CVEs you'd actually block a release on
+docker scout cves --only-severity critical,high shortlink:naive
+
+# only ones that have a fix available (actionable)
+docker scout cves --only-fixed shortlink:naive
+```
+
+### Recommendations (how to fix)
+
+```bash
+docker scout recommendations shortlink:naive
+```
+
+Suggests base-image refreshes/updates that reduce CVEs — e.g. "update `node:20.5` → `node:20.11-alpine`, fixes N vulnerabilities."
+
+### Comparing two images
+
+```bash
+docker scout compare --to shortlink:multi shortlink:naive
+```
+
+### CI gate (fail the build on criticals)
+
+```bash
+docker scout cves --only-severity critical --exit-code shortlink:multi
+# exit code 2 = vulnerabilities found → pipeline fails
+```
+
+### Alternative: Trivy (free, CI-friendly, no Docker Hub login)
+
+```bash
+trivy image shortlink:naive
+trivy image --severity CRITICAL,HIGH shortlink:naive
+trivy image --exit-code 1 --severity CRITICAL shortlink:multi   # CI gate
+```
+
+### Reading results
+
+Point out three things in the output:
+
+1. **Severity buckets** (C/H/M/L) — triage top-down.
+2. **Fixable vs not** — a CVE with no available fix isn't something you can patch today; focus energy on `--only-fixed`.
+3. **Base image vs app dependency** — a base-image CVE is fixed by updating the base; an app-dependency CVE is fixed by bumping *your* dependency. Scout tells you which is which.
+
+The punchline: `shortlink:multi` on `scratch` has essentially **nothing to scan** — no OS packages means no OS CVEs. Security fell out of the size work for free.
+
+---
+
+## 8 · Hands-on lab
+
+Give students the naive Go project and this sequence:
+
+1. **Measure the baseline.** Build `Dockerfile.naive`, record size + `docker scout quickview`.
+2. **Go multi-stage.** Write the two-stage Dockerfile targeting `scratch`. Build, run, confirm it serves on `:8080`.
+3. **Break it on purpose.** Remove `CGO_ENABLED=0` *and* import something that triggers cgo (or just switch the final base to `alpine` with a glibc build). Reproduce `exec /server: no such file or directory`.
+4. **Debug it** using the §3 method: run the builder stage, `ldd` the binary, identify static vs dynamic. Fix it.
+5. **Try three bases** — `scratch`, `distroless/static`, `alpine` — and fill in the comparison table from §5.
+6. **Break caching, then fix it.** Put `COPY . .` before `go mod download`, rebuild twice with a code change, watch deps re-download. Reorder, rebuild, watch it stay cached.
+7. **Scan both** the naive and multi images. Record the CVE delta.
+
+**Deliverable:** the completed comparison table + a one-paragraph writeup of what caused their "won't run" error and how they diagnosed it.
+
+---
+
+## Recap / cheat sheet
+
+**Multi-stage:** build heavy, ship light. `COPY --from=<stage>` pulls only the artifact.
+
+**`exec … no such file or directory` (file exists)** = missing loader/libc in the final stage → `CGO_ENABLED=0` for static, or use a matching-libc base. Never a mystery again.
+
+**Debug "won't run":** read the exact error → run the *builder* stage to isolate → `ldd` to check static/dynamic → `inspect` the entrypoint.
+
+**Caching:** least-changing layers first; copy dependency manifests before source; keep `apt update`+`install` in one `RUN`; use `.dockerignore`.
+
+**Measure:** `docker images`, `docker history`, `dive`.
+
+**Scan:** `docker scout quickview` / `cves` / `recommendations`, or `trivy image`. Smaller base = fewer CVEs.
+
+```bash
+# the four commands to leave on the board
+docker history <image>                       # where's the weight?
+docker build --target builder -t x:b .        # isolate build vs runtime
+docker run --rm x:b ldd /server               # static or dynamic?
+docker scout quickview <image>                # how exposed am I?
+```
+
 
 # Day 5 — Networking and Storage
 

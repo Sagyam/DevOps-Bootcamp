@@ -6,3 +6,4 @@
 *.cer
 *.crt
 sagyam-key
+tmp/
