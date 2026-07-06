@@ -69,8 +69,4 @@ docker push yourname/flask-hello:latest
 
 New repos default to public. In the repository settings on Docker Hub you can switch it to **private** so only accounts you grant access can pull it.
 
-## Log out (e.g. on a shared machine)
 
-```bash
-docker logout
-```
