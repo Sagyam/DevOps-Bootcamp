@@ -26,7 +26,7 @@ jobs:
           provenance: true
 
       - name: CVE gate (fail on fixable CRITICAL/HIGH)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: shortlink-${{ matrix.service }}:ci
           severity: CRITICAL,HIGH
