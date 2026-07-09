@@ -29,7 +29,7 @@ jobs:
           echo "Who pushed:               ${{ github.actor }}"
 
       - name: Run the greeting
-        working-directory: day1-hello
+        working-directory: day1-hello/hello
         env:
           GREET_NAME: bootcamp        # data passed from the workflow into the program
         run: node greet.js
