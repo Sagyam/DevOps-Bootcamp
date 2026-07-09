@@ -1,0 +1,79 @@
+name: Day 4 - Integration (matrix + services)
+
+on:
+  push:
+    paths:
+      - 'day4-integration/**'
+      - '.github/workflows/day4-integration.yml'
+      - '.github/actions/setup-node-project/**'
+  pull_request:
+    paths:
+      - 'day4-integration/**'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # Run this whole job once per Node version. If one fails, the others
+    # still run (fail-fast: false) so you see the full picture.
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['20', '22']
+
+    # Service containers: real Postgres and Redis, alive for the job's lifetime.
+    # The job talks to them on localhost via the mapped ports.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        # Wait until Postgres is actually ready before steps run.
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      REDIS_URL: redis://localhost:6379
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up project (composite action)
+        uses: ./.github/actions/setup-node-project
+        with:
+          node-version: ${{ matrix.node-version }}
+          working-directory: day4-integration
+
+      - name: Unit tests
+        working-directory: day4-integration
+        run: npm run test:unit
+
+      - name: Integration tests (against service containers)
+        working-directory: day4-integration
+        run: npm run test:integration | tee integration-${{ matrix.node-version }}.log
+
+      - name: Upload test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          # Name includes the matrix value so the two runs don't overwrite each other.
+          name: day4-integration-log-node${{ matrix.node-version }}
+          path: day4-integration/integration-${{ matrix.node-version }}.log
+          retention-days: 7

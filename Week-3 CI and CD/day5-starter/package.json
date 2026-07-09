@@ -1,0 +1,10 @@
+{
+  "name": "day5-deploy",
+  "version": "1.0.0",
+  "description": "A versioned service used to learn secrets, environments, and continuous deployment.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "license": "MIT"
+}

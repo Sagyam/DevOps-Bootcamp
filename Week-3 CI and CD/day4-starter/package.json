@@ -1,0 +1,16 @@
+{
+  "name": "day4-integration",
+  "version": "1.0.0",
+  "description": "A link shortener with Postgres + Redis, used to learn service containers and matrices.",
+  "main": "src/store.js",
+  "scripts": {
+    "test:unit": "node --test __tests__/shorten.test.js",
+    "test:integration": "node --test __tests__/store.integration.test.js",
+    "test": "node --test"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "pg": "^8.11.5",
+    "redis": "^4.6.13"
+  }
+}

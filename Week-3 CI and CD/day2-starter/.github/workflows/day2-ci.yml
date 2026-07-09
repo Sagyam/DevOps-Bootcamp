@@ -1,0 +1,53 @@
+name: Day 2 - CI
+
+on:
+  push:
+    paths:
+      - 'day2-node-ci/**'
+      - '.github/workflows/day2-ci.yml'
+  pull_request:
+    paths:
+      - 'day2-node-ci/**'
+  workflow_dispatch:
+
+# Every `run` in this job starts inside day2-node-ci/, so we don't repeat
+# `cd day2-node-ci` in every step. This is the monorepo pattern.
+defaults:
+  run:
+    working-directory: day2-node-ci
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js (with dependency cache)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          # setup-node needs to know where the lockfile lives in a monorepo:
+          cache-dependency-path: day2-node-ci/package-lock.json
+
+      - name: Install dependencies
+        # `npm ci` is the CI-correct install: it obeys the lockfile exactly
+        # and fails if package.json and the lockfile disagree.
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        # Even when tests pass, we keep the coverage report as a downloadable
+        # artifact. `if: always()` means we get it even when a later step fails.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: day2-coverage
+          path: day2-node-ci/coverage/
+          retention-days: 7

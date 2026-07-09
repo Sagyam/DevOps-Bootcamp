@@ -1,0 +1,35 @@
+name: Day 1 - Hello Actions
+
+# WHEN does this run? Three triggers, all scoped to Day 1 only.
+on:
+  push:
+    paths:
+      - 'day1-hello/**'
+      - '.github/workflows/day1-hello.yml'
+  pull_request:
+    paths:
+      - 'day1-hello/**'
+  workflow_dispatch:        # lets you run it by hand from the Actions tab
+
+jobs:
+  greet:
+    # WHERE does it run? A fresh Ubuntu machine GitHub gives you for free.
+    runs-on: ubuntu-latest
+    steps:
+      # Steps run top-to-bottom, sharing the same machine and working directory.
+
+      - name: Check out the repository
+        uses: actions/checkout@v4      # an "action" = a reusable step someone published
+
+      - name: Show me the context
+        run: |
+          echo "Event that triggered me: ${{ github.event_name }}"
+          echo "Branch/ref:               ${{ github.ref }}"
+          echo "Commit SHA:               ${{ github.sha }}"
+          echo "Who pushed:               ${{ github.actor }}"
+
+      - name: Run the greeting
+        working-directory: day1-hello
+        env:
+          GREET_NAME: bootcamp        # data passed from the workflow into the program
+        run: node greet.js

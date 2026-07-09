@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Test / build output
+coverage/
+dist/
+build/
+*.log
+npm-debug.log*
+
+# Environment — never commit real secrets
+.env
+.env.local
+*.pem
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

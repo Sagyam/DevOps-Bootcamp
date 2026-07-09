@@ -1,0 +1,11 @@
+{
+  "name": "day3-docker-app",
+  "version": "1.0.0",
+  "description": "A small HTTP API used to learn how CI builds and ships Docker images.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "license": "MIT"
+}

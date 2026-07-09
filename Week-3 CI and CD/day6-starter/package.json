@@ -1,0 +1,20 @@
+{
+  "name": "day6-capstone",
+  "version": "1.0.0",
+  "description": "A Task API (Node + Postgres) that must ship through a full CI/CD pipeline.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "lint": "eslint .",
+    "test:unit": "node --test __tests__/validate.test.js",
+    "test:integration": "node --test __tests__/api.integration.test.js",
+    "test": "node --test"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "pg": "^8.11.5"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  }
+}

@@ -1,0 +1,29 @@
+# A local composite action: a reusable *set of steps* living in this repo.
+# Instead of repeating "setup-node + npm ci" in every job, we call this.
+# Reference it with:  uses: ./.github/actions/setup-node-project
+
+name: Setup Node project
+description: Set up a Node version with npm caching and install locked dependencies.
+
+inputs:
+  node-version:
+    description: Node.js version to install
+    required: true
+  working-directory:
+    description: Folder containing package.json
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+        cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: npm ci
