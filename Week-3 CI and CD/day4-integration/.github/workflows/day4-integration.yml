@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: ['20', '22']
+        node-version: ['22', '24']
 
     # Service containers: real Postgres and Redis, alive for the job's lifetime.
     # The job talks to them on localhost via the mapped ports.

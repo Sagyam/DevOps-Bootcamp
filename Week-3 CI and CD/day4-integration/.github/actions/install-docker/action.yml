@@ -1,0 +1,105 @@
+name: 'VM Remote Docker Installer'
+description: 'Establishes SSH connection to a remote VM, fingerprints the distro, and installs/verifies Docker.'
+inputs:
+  ssh_host:
+    description: 'The target host IP or domain'
+    required: true
+  ssh_user:
+    description: 'SSH user account with sudo access'
+    required: true
+  ssh_key:
+    description: 'Private SSH key string for access'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Execute Multi-Distro Installation Script
+      shell: bash
+      env:
+        SSH_HOST: ${{ inputs.ssh_host }}
+        SSH_USER: ${{ inputs.ssh_user }}
+        SSH_KEY: ${{ inputs.ssh_key }}
+      run: |
+        # 1. Safe ephemeral staging of SSH Identity Configuration
+        mkdir -p ~/.ssh
+        echo "$SSH_KEY" > ~/.ssh/id_vm_rsa
+        chmod 600 ~/.ssh/id_vm_rsa
+
+        echo "Initializing connection pipeline to $SSH_HOST..."
+        
+        # 2. Inject environment agnostic provisioning directly to the target environment
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_vm_rsa "$SSH_USER@$SSH_HOST" 'bash -s' << 'EOF'
+          set -e
+
+          # Distro Fingerprinting Loop
+          if [ -f /etc/os-release ]; then
+              . /etc/os-release
+              OS_ID=$ID
+              OS_LIKE=$ID_LIKE
+          else
+              echo "CRITICAL: Unable to parse /etc/os-release. Operational host environment unknown."
+              exit 1
+          fi
+
+          echo "Target OS Detected: $OS_ID | Upstream Base: $OS_LIKE"
+
+          # Guard Clause: Bypass execution if Docker is functional
+          if command -v docker >/dev/null 2>&1; then
+              echo "Docker is already available on this node."
+          else
+              echo "No active installation discovered. Launching custom distro hook..."
+              
+              case "$OS_ID" in
+                  ubuntu|debian|raspbian|pop|fedora|centos|rhel|amzn)
+                      # The official Docker execution wrapper natively supports Debian, 
+                      # Ubuntu, Fedora, CentOS, RHEL, and Amazon Linux 2 / 2023 out of the box.
+                      curl -fsSL https://get.docker.com -o get-docker.sh
+                      sudo sh get-docker.sh
+                      rm get-docker.sh
+                      ;;
+                  mariner|azurelinux)
+                      # Microsoft Azure Linux (CBL-Mariner) targets the native Moby engine implementation
+                      echo "Processing package definitions via tdnf..."
+                      sudo tdnf install moby-engine moby-cli ca-certificates -y
+                      ;;
+                  *)
+                      # Upstream kinship mitigation mapping fallback
+                      if [[ "$OS_LIKE" == *"debian"* || "$OS_LIKE" == *"ubuntu"* || "$OS_LIKE" == *"fedora"* || "$OS_LIKE" == *"rhel"* ]]; then
+                          curl -fsSL https://get.docker.com -o get-docker.sh
+                          sudo sh get-docker.sh
+                          rm get-docker.sh
+                      else
+                          echo "Warning: Direct ID mismatch. Attempting dynamic lookup execution pipeline..."
+                          curl -fsSL https://get.docker.com -o get-docker.sh
+                          sudo sh get-docker.sh || { echo "Fallback execution sequence dropped."; exit 1; }
+                          rm get-docker.sh
+                      fi
+                      ;;
+              esac
+          fi
+
+          # 3. Enforce Engine Lifecycle States
+          echo "Synchronizing system units..."
+          sudo systemctl daemon-reload || true
+          sudo systemctl enable docker.service
+          sudo systemctl start docker.service
+
+          # 4. Bind running context to Docker Engine groups
+          sudo usermod -aG docker $USER || true
+
+          # 5. Smoke-Test Engine Readiness
+          echo "Evaluating Docker Runtime Status..."
+          if command -v docker >/dev/null 2>&1; then
+              docker --version
+              echo "Verifying image instantiation..."
+              sudo docker run --rm hello-world
+              echo "PROVISIONING COMPLETE: Context validation successful."
+          else
+              echo "CRITICAL: Docker binary unresolvable following pipeline termination."
+              exit 1
+          fi
+        EOF
+
+        # 3. Clean up the key asset from local GitHub runner disk
+        rm -f ~/.ssh/id_vm_rsa
