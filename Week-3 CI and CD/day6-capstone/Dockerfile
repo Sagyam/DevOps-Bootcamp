@@ -9,7 +9,7 @@ ENV NODE_ENV=production
 WORKDIR /app
 USER node
 COPY --from=build /app /app
-EXPOSE 3000
+EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD wget -qO- http://localhost:3000/health || exit 1
+  CMD wget -qO- http://localhost:3001/health || exit 1
 CMD ["node", "src/server.js"]

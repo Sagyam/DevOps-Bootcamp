@@ -77,7 +77,7 @@ jobs:
     # Settings -> Environments -> production.
     environment:
       name: production
-      url: http://${{ vars.SSH_HOST }}:3000/health
+      url: http://${{ vars.SSH_HOST }}:3001/health
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1
@@ -92,5 +92,5 @@ jobs:
             IMAGE=ghcr.io/${{ github.repository }}/day5-app:${{ needs.build.outputs.version }}
             docker pull "$IMAGE"
             docker rm -f day5-app 2>/dev/null || true
-            docker run -d --name day5-app -p 3000:3000 --restart unless-stopped "$IMAGE"
+            docker run -d --name day5-app -p 3001:3001 --restart unless-stopped "$IMAGE"
             echo "Deployed $IMAGE"

@@ -44,7 +44,7 @@ function createServer(db) {
 if (require.main === module) {
   const db = makeDb(process.env.DATABASE_URL);
   db.init().then(() => {
-    const port = process.env.PORT || 3000;
+    const port = process.env.PORT || 3001;
     createServer(db).listen(port, () => console.log(`listening on ${port}`));
   });
 }
