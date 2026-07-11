@@ -21,12 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js (with dependency cache)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '26'
           cache: 'npm'
           # setup-node needs to know where the lockfile lives in a monorepo:
           cache-dependency-path: day2-node-ci/package-lock.json

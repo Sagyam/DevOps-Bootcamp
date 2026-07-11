@@ -19,7 +19,7 @@ jobs:
       # Steps run top-to-bottom, sharing the same machine and working directory.
 
       - name: Check out the repository
-        uses: actions/checkout@v4      # an "action" = a reusable step someone published
+        uses: actions/checkout@v7      # an "action" = a reusable step someone published
 
       - name: Show me the context
         run: |
