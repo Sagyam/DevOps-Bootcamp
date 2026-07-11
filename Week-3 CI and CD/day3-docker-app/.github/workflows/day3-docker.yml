@@ -3,11 +3,11 @@ name: Day 3 - Docker build & push
 on:
   push:
     paths:
-      - 'day3-docker-app/**'
-      - '.github/workflows/day3-docker.yml'
+      - "day3-docker-app/**"
+      - ".github/workflows/day3-docker.yml"
   pull_request:
     paths:
-      - 'day3-docker-app/**'
+      - "day3-docker-app/**"
   workflow_dispatch:
 
 # Least privilege: this job only needs to read code and write packages (GHCR).
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Run tests before we build anything
         working-directory: day3-docker-app
@@ -33,7 +33,7 @@ jobs:
       - name: Log in to GHCR
         # No secret to create: GITHUB_TOKEN is provided automatically and,
         # with packages:write above, it can push to *this* repo's registry.
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -41,7 +41,7 @@ jobs:
 
       - name: Compute image tags and labels
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository }}/day3-app
           tags: |
