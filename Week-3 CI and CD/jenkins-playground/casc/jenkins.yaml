@@ -1,0 +1,59 @@
+# Jenkins Configuration as Code (JCasC).
+# This one file replaces the entire setup wizard: security, authorization,
+# system settings. This is the Jenkins analogue of a GitHub Actions YAML — but
+# note it configures the *server*, not a pipeline.
+
+jenkins:
+  systemMessage: "Jenkins, configured entirely from code (JCasC). Bootcamp playground — contrast this with GitHub Actions."
+  numExecutors: 2
+  # A simple built-in user database. Credentials come from env vars (see compose).
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_ID:-admin}"
+          password: "${JENKINS_ADMIN_PASSWORD:-admin}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+unclassified:
+  location:
+    url: "http://localhost:8080/"
+
+# ===========================================================================
+# OPTIONAL — create jobs *from code* on boot (JCasC + Job DSL).
+#
+# By default this playground seeds the `hello-ci` job from a baked config.xml.
+# If you'd rather watch JCasC itself define a job, uncomment ONLY the indented
+# YAML lines in the two blocks below (from `security:` down). Don't uncomment
+# this prose. The `useScriptSecurity: false` line lets the seed script run
+# without manual approval — fine locally, NOT on a shared/prod controller.
+# ===========================================================================
+
+# --- 8< --- uncomment from here ---
+# security:
+#   globalJobDslSecurityConfiguration:
+#     useScriptSecurity: false
+# jobs:
+#   - script: |
+#       pipelineJob('hello-from-jcasc') {
+#         description('Created on boot by JCasC + Job DSL.')
+#         definition {
+#           cps {
+#             sandbox(true)
+#             script('''
+#               pipeline {
+#                 agent any
+#                 stages {
+#                   stage('Build')   { steps { sh 'echo Building... && sleep 1' } }
+#                   stage('Test')    { steps { sh 'echo Testing...  && sleep 1' } }
+#                   stage('Package') { steps { echo 'Packaging artifact.' } }
+#                 }
+#                 post { always { echo 'This job was defined as code.' } }
+#               }
+#             '''.stripIndent())
+#           }
+#         }
+#       }
+# --- 8< --- to here ---

@@ -1,0 +1,31 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job">
+  <description>Seeded from a baked config.xml (ref mechanism). Open "Configure" to see the pipeline, or edit this file and rebuild.</description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
+    <script>pipeline {
+  agent any
+  stages {
+    stage('Checkout-ish') {
+      steps { echo 'In a real job this stage would check out SCM.' }
+    }
+    stage('Build') {
+      steps { sh 'echo Building... &amp;&amp; sleep 1' }
+    }
+    stage('Test') {
+      steps { sh 'echo Running tests... &amp;&amp; sleep 1' }
+    }
+    stage('Package') {
+      steps { echo 'Packaging artifact.' }
+    }
+  }
+  post {
+    always { echo 'This pipeline is a Jenkinsfile, run by a controller you operate.' }
+  }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
