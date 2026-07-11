@@ -1,0 +1,31 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job">
+  <description>A SCRIPTED pipeline (node{}) showing real Groovy: lists, loops, try/catch. Contrast with the declarative ones.</description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
+    <script>node {
+  stage('Groovy logic') {
+    def targets = ['api', 'web', 'worker']
+    echo "Deploying ${targets.size()} services"
+    targets.each { name -&gt;
+      echo "  deploying ${name}"
+    }
+  }
+  stage('Try / catch') {
+    try {
+      sh 'echo risky command; exit 1'
+    } catch (err) {
+      echo "Caught a failure and handled it: ${err}"
+    }
+  }
+  stage('Compute') {
+    def total = (1..5).sum()
+    echo "Sum of 1..5 = ${total}"
+  }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

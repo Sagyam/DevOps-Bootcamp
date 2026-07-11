@@ -1,0 +1,38 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job">
+  <description>retry(), timeout(), and post{} success/failure/always blocks. Deliberately flaky so retry earns its keep.</description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
+    <script>pipeline {
+  agent any
+  options {
+    timeout(time: 10, unit: 'MINUTES')
+  }
+  stages {
+    stage('Flaky step (auto-retried)') {
+      steps {
+        retry(3) {
+          sh 'echo attempt; if [ $((RANDOM % 2)) -eq 0 ]; then echo ok; else echo "flaked"; exit 1; fi'
+        }
+      }
+    }
+    stage('Timed step') {
+      steps {
+        timeout(time: 5, unit: 'SECONDS') {
+          sh 'echo working; sleep 1; echo done'
+        }
+      }
+    }
+  }
+  post {
+    success { echo 'All good.' }
+    failure { echo 'Something failed - check the logs above.' }
+    always  { echo 'This always runs: notifications, cleanup, etc.' }
+  }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

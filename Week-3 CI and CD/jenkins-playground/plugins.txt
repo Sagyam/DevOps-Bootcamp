@@ -1,5 +1,31 @@
+# === core: what makes this playground work ===
 configuration-as-code
 job-dsl
 workflow-aggregator
 pipeline-stage-view
 git
+
+# === quality-of-life: "makes life easy" ===
+# docker-workflow  -> agent { docker { image '...' } }  (needed by the docker-agent job)
+docker-workflow
+# pipeline-utility-steps -> readJSON/readYaml/zip/findFiles in pipelines
+pipeline-utility-steps
+# credentials-binding -> withCredentials {} to inject secrets safely
+credentials-binding
+# timestamper -> [HH:mm:ss] on every console line
+timestamper
+# ansicolor -> colored console output
+ansicolor
+# ws-cleanup -> cleanWs() to wipe the workspace
+ws-cleanup
+# build-timeout -> global build timeout guard
+build-timeout
+# warnings-ng -> aggregate lint/compiler/scanner reports with trend graphs
+warnings-ng
+# htmlpublisher -> publish an HTML report (coverage, etc.) on the job page
+htmlpublisher
+# dark-theme -> because you stare at it all day
+dark-theme
+
+# === heavy but popular; delete the next line for a MUCH faster image build ===
+blueocean

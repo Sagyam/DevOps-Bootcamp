@@ -1,0 +1,36 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job">
+  <description>Runs checks in parallel, then fans a build out across a 2x2 matrix (platform x arch).</description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
+    <script>pipeline {
+  agent any
+  stages {
+    stage('Parallel checks') {
+      parallel {
+        stage('Lint') { steps { echo 'linting...'; sh 'sleep 1' } }
+        stage('Unit') { steps { echo 'unit tests...'; sh 'sleep 2' } }
+        stage('Dependency scan') { steps { echo 'scanning deps...'; sh 'sleep 1' } }
+      }
+    }
+    stage('Build matrix') {
+      matrix {
+        axes {
+          axis { name 'PLATFORM'; values 'linux', 'windows' }
+          axis { name 'ARCH'; values 'amd64', 'arm64' }
+        }
+        stages {
+          stage('Compile') {
+            steps { echo "Building ${env.PLATFORM}/${env.ARCH}" }
+          }
+        }
+      }
+    }
+  }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

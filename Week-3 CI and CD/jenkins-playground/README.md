@@ -16,12 +16,16 @@ Then open http://localhost:8080 and log in with **admin / admin**.
 You'll land on a Jenkins that already has:
 - the setup wizard skipped,
 - an admin user and login-required authorization,
-- a working pipeline job called **hello-ci** (Build → Test → Package),
+- **six ready-made pipeline jobs** to explore,
 
 ...all defined in files in this folder, not clicked together.
 
-Click **hello-ci → Build Now** to watch it run. Open **Configure** to see the
+Click any job → **Build Now** to watch it run. Open **Configure** to see the
 pipeline, or **Manage Jenkins → Configuration as Code** to see the live JCasC.
+
+See **`JENKINS-PIPELINES.md`** for what each example teaches (parameters +
+approval gates, parallel + matrix, retry/timeout/post, scripted Groovy, and a
+Docker-agent example) and a rundown of the pre-installed quality-of-life plugins.
 
 ## What each file does
 
@@ -33,7 +37,7 @@ pipeline, or **Manage Jenkins → Configuration as Code** to see the live JCasC.
 | `casc/jenkins.yaml` | The whole server config as code (the star of the show) |
 | `jobs/hello-ci/config.xml` | The seeded pipeline job |
 
-## Differences from GitHub Actions
+## The teaching contrast (say this out loud)
 
 | | GitHub Actions | Jenkins |
 | --- | --- | --- |
