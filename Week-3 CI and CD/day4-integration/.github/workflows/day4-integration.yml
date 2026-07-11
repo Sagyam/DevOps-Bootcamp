@@ -3,12 +3,12 @@ name: Day 4 - Integration (matrix + services)
 on:
   push:
     paths:
-      - 'day4-integration/**'
-      - '.github/workflows/day4-integration.yml'
-      - '.github/actions/setup-node-project/**'
+      - "day4-integration/**"
+      - ".github/workflows/day4-integration.yml"
+      - ".github/actions/setup-node-project/**"
   pull_request:
     paths:
-      - 'day4-integration/**'
+      - "day4-integration/**"
   workflow_dispatch:
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: ['22', '24']
+        node-version: ["24", "26"]
 
     # Service containers: real Postgres and Redis, alive for the job's lifetime.
     # The job talks to them on localhost via the mapped ports.
@@ -53,7 +53,7 @@ jobs:
 
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up project (composite action)
         uses: ./.github/actions/setup-node-project
@@ -71,7 +71,7 @@ jobs:
 
       - name: Upload test log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           # Name includes the matrix value so the two runs don't overwrite each other.
           name: day4-integration-log-node${{ matrix.node-version }}

@@ -3,11 +3,11 @@ name: Day 2 - CI
 on:
   push:
     paths:
-      - 'day2-node-ci/**'
-      - '.github/workflows/day2-ci.yml'
+      - "day2-node-ci/**"
+      - ".github/workflows/day2-ci.yml"
   pull_request:
     paths:
-      - 'day2-node-ci/**'
+      - "day2-node-ci/**"
   workflow_dispatch:
 
 # Every `run` in this job starts inside day2-node-ci/, so we don't repeat
@@ -26,8 +26,8 @@ jobs:
       - name: Set up Node.js (with dependency cache)
         uses: actions/setup-node@v6
         with:
-          node-version: '26'
-          cache: 'npm'
+          node-version: "26"
+          cache: "npm"
           # setup-node needs to know where the lockfile lives in a monorepo:
           cache-dependency-path: day2-node-ci/package-lock.json
 
@@ -47,7 +47,7 @@ jobs:
         # Even when tests pass, we keep the coverage report as a downloadable
         # artifact. `if: always()` means we get it even when a later step fails.
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: day2-coverage
           path: day2-node-ci/coverage/
