@@ -1,0 +1,98 @@
+# Day 5 — the core "how jobs talk to each other" lesson. Pure logic, no infra,
+# so it cannot fail on you live.
+#
+# Concepts, in order of appearance:
+#   * a job OUTPUT computed at runtime and consumed downstream via needs.<job>.outputs
+#   * a DYNAMIC MATRIX built by one job and fanned out by the next
+#   * SECRET masking (the value prints as *** even if you try to echo it)
+#   * ENVIRONMENTS as a gate — and the push-vs-pull framing for real deploys
+
+name: Day 5 · Wiring jobs together
+
+on:
+  push:
+    paths:
+      - "day5-ecosystem/**"
+      - ".github/workflows/day5-wiring.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  # ---- job A: decide what we're building, and how ----
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      matrix: ${{ steps.meta.outputs.matrix }}
+    steps:
+      - name: Compute version + test matrix
+        id: meta
+        run: |
+          version="$(date +%Y.%m.%d)-${GITHUB_SHA::7}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # Emit JSON that a later job will parse with fromJSON()
+          echo 'matrix={"node":["20","22"]}' >> "$GITHUB_OUTPUT"
+          echo "Planned version: $version"
+
+  # ---- job B: consume A's outputs; fan out over the matrix A produced ----
+  test:
+    needs: plan
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Lint + test
+        working-directory: day5-ecosystem
+        run: |
+          echo "Version ${{ needs.plan.outputs.version }} on Node ${{ matrix.node }}"
+          npm run lint
+          npm test
+
+  # ---- job C: needs both; uses the version A computed ----
+  package:
+    needs: [plan, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Make a versioned artifact
+        run: |
+          mkdir -p out
+          echo "${{ needs.plan.outputs.version }}" > out/VERSION
+          tar -czf "out/app-${{ needs.plan.outputs.version }}.tgz" day5-ecosystem
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: app-${{ needs.plan.outputs.version }}
+          path: out/
+
+  # ---- job D: gated "deploy" — but no SSH. This is the framing job. ----
+  promote:
+    needs: [plan, package]
+    runs-on: ubuntu-latest
+    environment: staging # human gate + scoped secrets live here
+    steps:
+      - name: Secrets are masked, even if you try to print them
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }} # optional repo/env secret
+        run: |
+          echo "Promoting version ${{ needs.plan.outputs.version }}"
+          echo "This secret should appear as ***: $DEPLOY_KEY"
+      - name: Record what *would* ship (push vs pull)
+        run: |
+          {
+            echo "## Promote summary"
+            echo ""
+            echo "| field | value |"
+            echo "| --- | --- |"
+            echo "| version | ${{ needs.plan.outputs.version }} |"
+            echo "| gate | staging environment |"
+            echo "| model | pull-based: the server converges toward the registry |"
+            echo ""
+            echo "A CI pipeline's job ends at a trustworthy, tagged artifact."
+            echo "SSH-push is the *fragile* way to close the last mile; pull-based is the robust way."
+          } >> "$GITHUB_STEP_SUMMARY"

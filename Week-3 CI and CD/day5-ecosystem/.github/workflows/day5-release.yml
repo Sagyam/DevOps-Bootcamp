@@ -1,0 +1,35 @@
+# Day 5 — a second "compose marketplace actions" example, this time triggered by
+# a tag instead of a PR. Push a tag like `day5-v1.0.0` and this cuts a GitHub
+# Release with auto-generated notes and a zipped artifact attached.
+#
+#   git tag day5-v1.0.0 && git push origin day5-v1.0.0
+#
+# Note: path filters do NOT apply to tag pushes, so we scope by tag prefix.
+
+name: Day 5 · Release
+
+on:
+  push:
+    tags:
+      - "day5-v*"
+
+permissions:
+  contents: write # required to create a Release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Package the app
+        run: |
+          mkdir -p dist
+          zip -r "dist/day5-ecosystem-${GITHUB_REF_NAME}.zip" day5-ecosystem
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          generate_release_notes: true # GitHub writes the changelog from merged PRs
+          files: dist/*.zip

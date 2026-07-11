@@ -1,0 +1,30 @@
+# Day 5 — calling the reusable workflow. `uses:` at the JOB level (not step
+# level) is how you call another workflow. `secrets: inherit` forwards this
+# repo's secrets; you could also pass them explicitly by name.
+
+name: Day 5 · Use reusable quality gate
+
+on:
+  push:
+    paths:
+      - "day5-ecosystem/**"
+      - ".github/workflows/reusable-quality.yml"
+      - ".github/workflows/day5-uses-reusable.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  call-quality:
+    uses: ./.github/workflows/reusable-quality.yml
+    with:
+      node-version: "22"
+    secrets: inherit
+
+  report:
+    needs: call-quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read the reusable workflow's output
+        run: echo "The reusable gate reported -> ${{ needs.call-quality.outputs.result }}"

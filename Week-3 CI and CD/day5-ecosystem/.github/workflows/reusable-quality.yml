@@ -1,0 +1,50 @@
+# Day 5 — a REUSABLE workflow. Note `on: workflow_call`. It declares typed
+# inputs, a declared output, and named secrets — the same interface ideas as
+# the composite action, but at the whole-workflow level. Another repo (or
+# another day's pipeline) can now call this exact quality gate.
+
+name: Reusable · Quality gate
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: "Node major version to test on"
+        required: false
+        type: string
+        default: "22"
+      working-directory:
+        description: "Where the app lives"
+        required: false
+        type: string
+        default: "day5-ecosystem"
+    outputs:
+      result:
+        description: "Human-readable pass summary"
+        value: ${{ jobs.quality.outputs.result }}
+    secrets:
+      NPM_TOKEN:
+        description: "Only needed if the app pulls private packages"
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.summarize.outputs.result }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: Lint + test
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          npm run lint
+          npm test
+      - name: Summarize
+        id: summarize
+        run: echo "result=quality passed on Node ${{ inputs.node-version }}" >> "$GITHUB_OUTPUT"

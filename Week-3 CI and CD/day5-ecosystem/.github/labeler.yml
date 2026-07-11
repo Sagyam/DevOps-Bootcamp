@@ -1,0 +1,13 @@
+# actions/labeler v5 syntax. Labels a PR based on which files it touches.
+# The label names must already exist in the repo (create them once under Issues > Labels).
+docs:
+  - changed-files:
+      - any-glob-to-any-file: "day5-ecosystem/**/*.md"
+
+source:
+  - changed-files:
+      - any-glob-to-any-file: "day5-ecosystem/src/**"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: ".github/**"

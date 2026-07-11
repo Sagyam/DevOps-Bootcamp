@@ -1,0 +1,11 @@
+{
+  "name": "day5-ecosystem",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tiny, dependency-free app so lint/test stages are bulletproof in class.",
+  "scripts": {
+    "lint": "node --check src/greet.js",
+    "test": "node --test"
+  },
+  "license": "MIT"
+}
