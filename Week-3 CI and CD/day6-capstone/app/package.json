@@ -1,0 +1,11 @@
+{
+  "name": "day6-capstone",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A stateless monolith: no DB, no orchestration. Just something to ship.",
+  "scripts": {
+    "lint": "node --check src/server.js",
+    "test": "node --test"
+  },
+  "license": "MIT"
+}
