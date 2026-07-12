@@ -7,3 +7,5 @@
 *.crt
 sagyam-key
 tmp/
+*.log
+.vagrant/
