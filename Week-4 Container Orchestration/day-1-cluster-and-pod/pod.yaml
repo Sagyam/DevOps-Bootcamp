@@ -1,0 +1,16 @@
+# Day 1 — a single, bare Pod.
+# This is the smallest thing you can run on Kubernetes: one container in one Pod.
+# We deploy it directly (no Deployment) ON PURPOSE, so you can feel what a raw Pod
+# does — and, at the end of the lab, what it does NOT do when you delete it.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: podinfo
+  labels:
+    app: podinfo        
+spec:
+  containers:
+    - name: podinfo
+      image: stefanprodan/podinfo:6.14.0
+      ports:
+        - containerPort: 9898   
