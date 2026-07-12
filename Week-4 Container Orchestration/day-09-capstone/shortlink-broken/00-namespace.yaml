@@ -1,0 +1,5 @@
+# Everything for the capstone lives in its own namespace — a clean blast radius.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shortlink

@@ -1,0 +1,14 @@
+# Day 6 — a load generator. Hammers the podinfo Service in a tight loop to drive
+# CPU up so you can watch the HPA scale replicas in K9s (:hpa and :deploy).
+# Delete this pod to watch it scale back DOWN (slowly — that's the cooldown).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: loadgen
+  labels:
+    app: loadgen
+spec:
+  containers:
+    - name: loadgen
+      image: busybox:1.36
+      command: ["sh", "-c", "while true; do wget -q -O- http://podinfo/ >/dev/null; done"]

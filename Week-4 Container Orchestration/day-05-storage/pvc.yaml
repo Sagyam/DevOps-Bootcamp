@@ -1,0 +1,32 @@
+# Day 5 — a standalone PersistentVolumeClaim + a pod that writes to it.
+# Applying the PVC triggers DYNAMIC PROVISIONING: minikube's default 'standard'
+# StorageClass auto-creates a matching PersistentVolume and binds it.
+# Demo: write a file -> delete the pod -> re-apply -> the file is STILL THERE.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 100Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: writer
+  labels:
+    app: writer
+spec:
+  containers:
+    - name: writer
+      image: busybox:1.36
+      command: ["sh", "-c", "echo \"first boot at $(date)\" >> /data/log.txt; sleep infinity"]
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: data

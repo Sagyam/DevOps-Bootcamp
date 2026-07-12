@@ -1,0 +1,13 @@
+# Day 3 — a throwaway client pod (has curl, wget, nslookup) for DNS demos.
+# We exec into this to prove that services are reachable by NAME across the cluster.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: client
+  labels:
+    app: client
+spec:
+  containers:
+    - name: curl
+      image: curlimages/curl:latest   # utility image; 'latest' is fine for a scratch client
+      command: ["sleep", "infinity"]

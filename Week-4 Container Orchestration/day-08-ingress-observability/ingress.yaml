@@ -1,0 +1,35 @@
+# Day 8 — an Ingress. One HTTP entrypoint that routes by HOSTNAME to different
+# services, with TLS termination. Served by the nginx ingress controller
+# (minikube addons enable ingress, done on Day 0).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - podinfo.local
+        - whoami.local
+      secretName: web-tls          # the cert/key live in tls-secret.yaml
+  rules:
+    - host: podinfo.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: podinfo
+                port:
+                  number: 80
+    - host: whoami.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: whoami
+                port:
+                  number: 80

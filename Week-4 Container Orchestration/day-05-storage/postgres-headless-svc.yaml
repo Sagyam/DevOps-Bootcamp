@@ -1,0 +1,16 @@
+# Day 5 — a HEADLESS Service (clusterIP: None). Instead of one virtual IP, it gives
+# each StatefulSet pod its own stable DNS name: postgres-0.postgres, postgres-1.postgres.
+# StatefulSets need this for stable identity.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  clusterIP: None
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

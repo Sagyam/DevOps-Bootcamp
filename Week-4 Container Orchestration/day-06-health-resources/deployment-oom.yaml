@@ -1,0 +1,27 @@
+# Day 6 — BREAK-FIX #2. A container that tries to allocate 250Mi but is limited to
+# 100Mi. The kernel kills it -> OOMKilled -> restart loop. In 'describe' look for
+# Last State: Terminated, Reason: OOMKilled. (Uses a purpose-built stress image.)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memory-hog
+  labels:
+    app: memory-hog
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: memory-hog
+  template:
+    metadata:
+      labels:
+        app: memory-hog
+    spec:
+      containers:
+        - name: stress
+          image: polinux/stress:latest
+          command: ["stress"]
+          args: ["--vm", "1", "--vm-bytes", "250M", "--vm-hang", "1"]
+          resources:
+            requests: { memory: 64Mi }
+            limits:   { memory: 100Mi }

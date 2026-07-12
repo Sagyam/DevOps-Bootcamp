@@ -1,0 +1,21 @@
+# Day 6 — a HorizontalPodAutoscaler. Watches CPU across the podinfo pods and adds
+# replicas when average CPU crosses 50% of the REQUEST. Needs metrics-server
+# (enabled on Day 0) and resource requests (set in deployment-probes.yaml).
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: podinfo
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: podinfo
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50

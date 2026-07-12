@@ -1,0 +1,13 @@
+ShortLink release "{{ .Release.Name }}" installed into namespace "{{ .Release.Namespace }}".
+
+  API replicas : {{ .Values.replicaCount }}
+  Redis cache  : {{ if .Values.redis.enabled }}enabled{{ else }}disabled{{ end }}
+  UI message   : {{ .Values.ui.message }}
+
+Reach the API:
+  kubectl port-forward svc/{{ include "shortlink.fullname" . }} 8080:{{ .Values.service.port }}
+  # open http://localhost:8080
+
+Inspect what Helm tracks:
+  helm status {{ .Release.Name }}
+  helm get values {{ .Release.Name }}

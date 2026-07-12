@@ -1,0 +1,32 @@
+# Day 2 — a Deployment. This is what you actually run in production.
+# A Deployment manages a ReplicaSet, which manages Pods. If a pod dies, the
+# ReplicaSet makes a new one. That healing is the whole point of today.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: podinfo
+  labels:
+    app: podinfo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: podinfo          # the Deployment finds "its" pods by this label — not by name
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1           # at most 1 extra pod above desired during a rollout
+      maxUnavailable: 0     # never drop below desired — zero-downtime updates
+  template:                 # the pod template — the RS stamps out copies of this
+    metadata:
+      labels:
+        app: podinfo
+    spec:
+      containers:
+        - name: podinfo
+          image: stefanprodan/podinfo:6.14.0
+          ports:
+            - containerPort: 9898
+          readinessProbe:          # gate the rollout on readiness (more on Day 6)
+            httpGet: { path: /readyz, port: 9898 }
+            initialDelaySeconds: 3

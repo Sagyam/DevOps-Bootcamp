@@ -1,0 +1,35 @@
+# Day 9 Part 2 — RBAC. A ServiceAccount that can ONLY read pods in the shortlink
+# namespace. This is what actually protects your Secrets (callback to Day 4).
+# Test it:
+#   kubectl auth can-i get  pods   --as=system:serviceaccount:shortlink:viewer -n shortlink   # yes
+#   kubectl auth can-i delete pods --as=system:serviceaccount:shortlink:viewer -n shortlink   # no
+#   kubectl auth can-i get  secrets --as=system:serviceaccount:shortlink:viewer -n shortlink  # no
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: viewer
+  namespace: shortlink
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-viewer
+  namespace: shortlink
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: viewer-binding
+  namespace: shortlink
+subjects:
+  - kind: ServiceAccount
+    name: viewer
+    namespace: shortlink
+roleRef:
+  kind: Role
+  name: pod-viewer
+  apiGroup: rbac.authorization.k8s.io

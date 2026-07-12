@@ -1,0 +1,6 @@
+apiVersion: v2
+name: shortlink
+description: Teaching chart — deploys the ShortLink API (podinfo) plus an optional Redis cache
+type: application
+version: 0.1.0            # the CHART version (bump when the templates change)
+appVersion: "6.14.0"     # the APP version being deployed (informational)

@@ -1,0 +1,50 @@
+# Frontend: nginx serving a static page from a ConfigMap-mounted file.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-html
+  namespace: shortlink
+data:
+  index.html: |
+    <!doctype html>
+    <html><head><title>ShortLink</title></head>
+    <body style="font-family:sans-serif;text-align:center;margin-top:4rem">
+      <h1>ShortLink</h1>
+      <p>Frontend served by nginx. The API lives at
+         <a href="http://api.shortlink.local">api.shortlink.local</a>.</p>
+    </body></html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: shortlink
+  labels: { app: frontend }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: frontend } }
+  template:
+    metadata: { labels: { app: frontend } }
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: html
+          configMap: { name: frontend-html }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: shortlink
+spec:
+  selector: { app: frontend }
+  ports:
+    - port: 80
+      targetPort: 80

@@ -1,0 +1,9 @@
+# Day 4 — a ConfigMap. Non-secret key/value config, kept OUT of the image so one
+# image runs in every environment. podinfo reads these as env vars (PODINFO_UI_*).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: podinfo-config
+data:
+  ui-color: "#8e44ad"                          # purple, so the change is obvious in the UI
+  ui-message: "Configured via a ConfigMap on Day 4"

@@ -1,0 +1,29 @@
+# Day 6 — BREAK-FIX #1. The app is perfectly healthy, but the LIVENESS PROBE points
+# at the wrong path, so Kubernetes thinks it's dead and kills it every ~30s ->
+# CrashLoopBackOff. The hard part: realising the APP is fine and the PROBE is the bug.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: podinfo
+  labels:
+    app: podinfo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: podinfo
+  template:
+    metadata:
+      labels:
+        app: podinfo
+    spec:
+      containers:
+        - name: podinfo
+          image: stefanprodan/podinfo:6.14.0
+          ports:
+            - containerPort: 9898
+          livenessProbe:
+            httpGet: { path: /health, port: 9898 }   # WRONG — the endpoint is /healthz
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "shortlink.fullname" . }}-config
+  labels:
+    {{- include "shortlink.labels" . | nindent 4 }}
+data:
+  ui-color: {{ .Values.ui.color | quote }}
+  ui-message: {{ .Values.ui.message | quote }}

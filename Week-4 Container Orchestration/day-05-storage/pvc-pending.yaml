@@ -1,0 +1,13 @@
+# Day 5 — BREAK-FIX. This PVC asks for a StorageClass that doesn't exist. It will
+# sit in Pending forever, and any pod that mounts it will be Pending too.
+# Lesson: a Pending pod is often a STORAGE or SCHEDULING problem — describe the PVC.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-pending
+spec:
+  storageClassName: fast-ssd     # no such StorageClass in this cluster
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi

@@ -1,0 +1,16 @@
+{{- if .Values.redis.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "shortlink.fullname" . }}-redis
+  labels:
+    {{- include "shortlink.labels" . | nindent 4 }}
+    component: redis
+spec:
+  selector:
+    {{- include "shortlink.selectorLabels" . | nindent 4 }}
+    component: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+{{- end }}

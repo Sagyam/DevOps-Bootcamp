@@ -1,0 +1,13 @@
+# Day 3 — BREAK-FIX. This Service applies cleanly and looks fine, but curling it
+# times out. Your job: find out why using K9s ':endpoints'. (The most common real
+# Kubernetes networking bug — and it NEVER errors on apply.)
+apiVersion: v1
+kind: Service
+metadata:
+  name: podinfo-bad
+spec:
+  selector:
+    app: podinfoo         # note the spelling — nothing in the cluster has this label
+  ports:
+    - port: 80
+      targetPort: 9898

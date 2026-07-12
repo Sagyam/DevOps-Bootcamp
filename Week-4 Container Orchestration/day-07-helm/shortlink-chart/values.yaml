@@ -1,0 +1,33 @@
+# values.yaml — the single place all the knobs live. Everything the templates
+# reference as .Values.* comes from here (or from -f overrides / --set on the CLI).
+
+replicaCount: 1
+
+image:
+  repository: stefanprodan/podinfo
+  tag: "6.14.0"
+  pullPolicy: IfNotPresent
+
+ui:
+  color: "#34577c"
+  message: "ShortLink API deployed with Helm"
+
+service:
+  type: ClusterIP
+  port: 80
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 128Mi
+
+# Extra env vars injected into the API container.
+# Demonstrates 'range' in the deployment template. Override in values-prod.yaml.
+extraEnv: []
+
+redis:
+  enabled: true            # toggling this false makes the redis-*.yaml templates render nothing
+  image: redis:7-alpine

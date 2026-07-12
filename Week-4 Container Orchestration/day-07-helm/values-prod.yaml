@@ -1,0 +1,19 @@
+# Override file: helm install shortlink ./shortlink-chart -f values-prod.yaml
+# Only the keys you want to CHANGE — everything else falls back to values.yaml.
+replicaCount: 3
+
+ui:
+  color: "#c0392b"                       # red, so "prod" is visually distinct from defaults
+  message: "ShortLink API (production values)"
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 128Mi
+  limits:
+    cpu: "1"
+    memory: 256Mi
+
+extraEnv:
+  - name: ENVIRONMENT
+    value: production

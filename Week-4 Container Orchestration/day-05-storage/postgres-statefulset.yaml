@@ -1,0 +1,49 @@
+# Day 5 — a StatefulSet. Unlike a Deployment, pods get STABLE names (postgres-0,
+# postgres-1), start/stop in ORDER, and each keeps its OWN storage via
+# volumeClaimTemplates. This is what databases need.
+# NOTE: these are two INDEPENDENT postgres instances (not replicated) — we run 2
+# only to make the stable-identity / ordering behaviour visible.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: postgres        # must match the headless service name
+  replicas: 2
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_PASSWORD
+              value: "labpassword"                    # real life: a Secret (Day 4)
+            - name: POSTGRES_DB
+              value: "shortlink"
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata  # subdir avoids the lost+found clash
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+  volumeClaimTemplates:          # each pod gets its OWN PVC, named data-postgres-0, etc.
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 500Mi

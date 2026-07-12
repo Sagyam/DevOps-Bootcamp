@@ -1,0 +1,15 @@
+# Day 3 — a NodePort Service. Opens a fixed port on the node so you can reach
+# the app from outside the cluster (how you expose things in minikube without
+# an ingress). Reach it with: minikube service podinfo-np --url
+apiVersion: v1
+kind: Service
+metadata:
+  name: podinfo-np
+spec:
+  type: NodePort
+  selector:
+    app: podinfo
+  ports:
+    - port: 80
+      targetPort: 9898
+      nodePort: 30080     # must be in the 30000-32767 range

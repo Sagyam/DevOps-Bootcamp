@@ -1,0 +1,71 @@
+# API (podinfo): ConfigMap + Secret wiring (Day 4), probes + resources + HPA (Day 6).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+  namespace: shortlink
+data:
+  ui-color: "#2c3e50"
+  ui-message: "ShortLink API - capstone build"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: shortlink
+  labels: { app: api }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: api } }
+  template:
+    metadata: { labels: { app: api } }
+    spec:
+      containers:
+        - name: api
+          image: stefanprodan/podinfo:6.14.0
+          ports:
+            - containerPort: 9898
+          env:
+            - name: PODINFO_UI_COLOR
+              valueFrom: { configMapKeyRef: { name: api-config, key: ui-color } }
+            - name: PODINFO_UI_MESSAGE
+              valueFrom: { configMapKeyRef: { name: api-config, key: ui-message } }
+            - name: PODINFO_CACHE_SERVER
+              value: "tcp://redis:6379"
+            - name: DB_HOST
+              value: "postgres"
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: postgres-secret, key: POSTGRES_PASSWORD } }
+          livenessProbe:
+            httpGet: { path: /healthz, port: 9898 }
+          readinessProbe:
+            httpGet: { path: /readyz, port: 9898 }
+          resources:
+            requests: { cpu: 100m, memory: 64Mi }
+            limits:   { cpu: 500m, memory: 128Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: shortlink
+spec:
+  selector: { app: api }
+  ports:
+    - port: 80
+      targetPort: 9898
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api
+  namespace: shortlink
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: api }
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 60 }

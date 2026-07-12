@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: frontend-html, namespace: shortlink }
+data:
+  index.html: |
+    <!doctype html><html><body style="font-family:sans-serif;text-align:center;margin-top:4rem">
+    <h1>ShortLink</h1><p>Frontend served by nginx.</p></body></html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: frontend, namespace: shortlink, labels: { app: frontend } }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: frontend } }
+  template:
+    metadata: { labels: { app: frontend } }
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine-typo       # BUG 1: no such tag -> ImagePullBackOff
+          ports: [{ containerPort: 80 }]
+          volumeMounts: [{ name: html, mountPath: /usr/share/nginx/html }]
+      volumes:
+        - name: html
+          configMap: { name: frontend-html }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: frontend, namespace: shortlink }
+spec:
+  selector: { app: frontendx }                 # BUG 3: no pod has label app=frontendx
+  ports: [{ port: 80, targetPort: 80 }]

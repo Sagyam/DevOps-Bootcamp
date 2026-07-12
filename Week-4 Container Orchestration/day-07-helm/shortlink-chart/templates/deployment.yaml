@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shortlink.fullname" . }}
+  labels:
+    {{- include "shortlink.labels" . | nindent 4 }}
+    component: api
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "shortlink.selectorLabels" . | nindent 6 }}
+      component: api
+  template:
+    metadata:
+      labels:
+        {{- include "shortlink.selectorLabels" . | nindent 8 }}
+        component: api
+    spec:
+      containers:
+        - name: api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 9898
+          env:
+            - name: PODINFO_UI_COLOR
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "shortlink.fullname" . }}-config
+                  key: ui-color
+            - name: PODINFO_UI_MESSAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "shortlink.fullname" . }}-config
+                  key: ui-message
+            {{- if .Values.redis.enabled }}
+            - name: PODINFO_CACHE_SERVER
+              value: "tcp://{{ include "shortlink.fullname" . }}-redis:6379"
+            {{- end }}
+            {{- range .Values.extraEnv }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          livenessProbe:
+            httpGet: { path: /healthz, port: 9898 }
+          readinessProbe:
+            httpGet: { path: /readyz, port: 9898 }
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

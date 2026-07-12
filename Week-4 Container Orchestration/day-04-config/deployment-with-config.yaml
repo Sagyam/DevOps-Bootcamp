@@ -1,0 +1,40 @@
+# Day 4 — the same podinfo, now wired to external config.
+#   - UI colour + message come from the ConfigMap (you SEE them in the browser)
+#   - API_TOKEN comes from the Secret (injected but not shown by the app)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: podinfo
+  labels:
+    app: podinfo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: podinfo
+  template:
+    metadata:
+      labels:
+        app: podinfo
+    spec:
+      containers:
+        - name: podinfo
+          image: stefanprodan/podinfo:6.14.0
+          ports:
+            - containerPort: 9898
+          env:
+            - name: PODINFO_UI_COLOR
+              valueFrom:
+                configMapKeyRef:
+                  name: podinfo-config
+                  key: ui-color
+            - name: PODINFO_UI_MESSAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: podinfo-config
+                  key: ui-message
+            - name: API_TOKEN                 # podinfo ignores this; we inject it to
+              valueFrom:                      # prove secret injection works (env | grep)
+                secretKeyRef:
+                  name: podinfo-secret
+                  key: api-token

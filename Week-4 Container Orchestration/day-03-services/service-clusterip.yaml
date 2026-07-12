@@ -1,0 +1,13 @@
+# Day 3 — a ClusterIP Service. A stable virtual IP + DNS name (podinfo) that
+# load-balances across whatever pods currently match the selector. This is the
+# default service type and what you'll use 90% of the time (internal traffic).
+apiVersion: v1
+kind: Service
+metadata:
+  name: podinfo
+spec:
+  selector:
+    app: podinfo          # THIS is the glue: the service routes to pods with this label
+  ports:
+    - port: 80            # the port the service listens on
+      targetPort: 9898    # the port on the pod it forwards to

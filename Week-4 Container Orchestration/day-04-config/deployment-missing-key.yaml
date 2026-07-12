@@ -1,0 +1,29 @@
+# Day 4 — BREAK-FIX. References a ConfigMap KEY that doesn't exist. The pod will
+# never reach Running. Note WHERE it fails — before your app code ever executes.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: podinfo
+  labels:
+    app: podinfo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: podinfo
+  template:
+    metadata:
+      labels:
+        app: podinfo
+    spec:
+      containers:
+        - name: podinfo
+          image: stefanprodan/podinfo:6.14.0
+          ports:
+            - containerPort: 9898
+          env:
+            - name: PODINFO_UI_COLOR
+              valueFrom:
+                configMapKeyRef:
+                  name: podinfo-config
+                  key: ui-colour        # the ConfigMap defines "ui-color", not "ui-colour"
