@@ -15,4 +15,4 @@ spec:
     - name: podinfo
       image: stefanprodan/podinfo:6.14.0-does-not-exist
       ports:
-        - containerPort: 9898b
+        - containerPort: 9898
