@@ -27,5 +27,3 @@ htmlpublisher
 # dark-theme -> because you stare at it all day
 dark-theme
 
-# === heavy but popular; delete the next line for a MUCH faster image build ===
-blueocean
