@@ -1,0 +1,110 @@
+name: 03 · The Race
+
+# Concurrency + FinOps at scale. Six tickets fan out across one runner group.
+# With 3 Windows runners and 6 tickets, each machine grabs a ticket, finishes,
+# then grabs the next off the queue — students literally watch load distribute.
+# Each ticket reports its own cost; a final "tally" job sums the total saved.
+#
+# Pick which group races (windows = your 3 laptops, linux = your 2) and the
+# projection knobs from the "Run workflow" button.
+
+on:
+  workflow_dispatch:
+    inputs:
+      os:
+        description: "Which runner group races"
+        type: choice
+        options: [windows, linux]
+        default: windows
+      runs_per_day:
+        description: "Runs/day per person (projection)"
+        default: "20"
+      team_size:
+        description: "Team size"
+        default: "6"
+      work_days:
+        description: "Billable days/month"
+        default: "22"
+
+env:
+  RUNS_PER_DAY: ${{ github.event.inputs.runs_per_day }}
+  TEAM_SIZE:    ${{ github.event.inputs.team_size }}
+  WORK_DAYS:    ${{ github.event.inputs.work_days }}
+
+jobs:
+  race:
+    strategy:
+      fail-fast: false
+      matrix:
+        ticket: [1, 2, 3, 4, 5, 6]   # more tickets than runners → watch them queue
+    runs-on: [self-hosted, "${{ github.event.inputs.os }}"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Grab ticket ${{ matrix.ticket }} (mac/linux)
+        if: runner.os != 'Windows'
+        run: |
+          START=$(date +%s)
+          bash finops/notify.sh "Ticket ${{ matrix.ticket }}" "Claimed by $RUNNER_NAME"
+          echo "::notice title=Race::Ticket ${{ matrix.ticket }} -> $RUNNER_NAME ($RUNNER_OS)"
+          sleep $(( (RANDOM % 25) + 20 ))
+          export ELAPSED_SECONDS=$(( $(date +%s) - START ))
+          mkdir -p cost
+          export COST_OUT="cost/ticket-${{ matrix.ticket }}.txt"
+          bash finops/cost-report.sh
+
+      - name: Grab ticket ${{ matrix.ticket }} (windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $start = [int][math]::Floor(((Get-Date).ToUniversalTime() - [datetime]'1970-01-01').TotalSeconds)
+          powershell -ExecutionPolicy Bypass -File finops\notify.ps1 "Ticket ${{ matrix.ticket }}" "Claimed by $env:RUNNER_NAME"
+          Write-Host "::notice title=Race::Ticket ${{ matrix.ticket }} -> $env:RUNNER_NAME ($env:RUNNER_OS)"
+          Start-Sleep -Seconds (Get-Random -Minimum 20 -Maximum 45)
+          $now = [int][math]::Floor(((Get-Date).ToUniversalTime() - [datetime]'1970-01-01').TotalSeconds)
+          $env:ELAPSED_SECONDS = ($now - $start)
+          New-Item -ItemType Directory -Force -Path cost | Out-Null
+          $env:COST_OUT = "cost\ticket-${{ matrix.ticket }}.txt"
+          powershell -ExecutionPolicy Bypass -File finops\cost-report.ps1
+
+      - name: Upload this ticket's cost
+        uses: actions/upload-artifact@v4
+        with:
+          name: cost-${{ matrix.ticket }}
+          path: cost/ticket-${{ matrix.ticket }}.txt
+          if-no-files-found: ignore
+
+  tally:
+    needs: race
+    # runs on a Linux runner so the bash tally always works, whichever group raced
+    runs-on: [self-hosted, linux]
+    steps:
+      - name: Download every ticket's cost
+        uses: actions/download-artifact@v4
+        with:
+          pattern: cost-*
+          path: costs
+          merge-multiple: true
+      - name: Tally the savings
+        run: |
+          total=0; count=0
+          for f in costs/*.txt; do
+            [ -e "$f" ] || continue
+            v=$(grep -o 'savings_usd=[0-9.]*' "$f" | cut -d= -f2)
+            [ -n "$v" ] || continue
+            total=$(awk "BEGIN{printf \"%.4f\", $total + $v}")
+            count=$((count+1))
+          done
+          echo "======================================================"
+          echo "  Race complete — $count tickets finished"
+          echo "  Total GitHub-hosted cost avoided this race: \$$total"
+          echo "======================================================"
+          {
+            echo "## Race results"
+            echo ""
+            echo "**$count** tickets ran across your self-hosted fleet."
+            echo ""
+            echo "Total GitHub-hosted cost these runs would have incurred: **\$$total**"
+            echo ""
+            echo "That's what your own machines saved in a single race. Now multiply by every push, every day."
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,118 @@
+name: 02 · FinOps Pipeline
+
+# The main lesson. A longer, staged "build" runs on each OS. Between stages the
+# student's laptop pops a desktop notification, and every step turns green live
+# in the web UI. At the end, the job CALCULATES what it would have cost on a
+# GitHub-hosted runner and prints the report to BOTH the runner terminal and
+# the web summary — so students see the money on their own screen.
+#
+# Tune the projection knobs from the "Run workflow" button.
+
+on:
+  workflow_dispatch:
+    inputs:
+      runs_per_day:
+        description: "Runs per day (per person)"
+        default: "20"
+      team_size:
+        description: "People triggering CI"
+        default: "6"
+      work_days:
+        description: "Billable days per month"
+        default: "22"
+
+env:
+  RUNS_PER_DAY: ${{ github.event.inputs.runs_per_day }}
+  TEAM_SIZE:    ${{ github.event.inputs.team_size }}
+  WORK_DAYS:    ${{ github.event.inputs.work_days }}
+
+jobs:
+  # ---------------------------------------------------------------- macOS ---
+  mac:
+    runs-on: [self-hosted, macOS]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start timer & open the live log
+        run: |
+          echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+          URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          (open "$URL" >/dev/null 2>&1 &) || true
+          bash finops/notify.sh "CI started" "Job landed on $RUNNER_NAME — watch it live"
+      - name: 1/4 · Install dependencies
+        run: bash finops/notify.sh "1/4 Install deps" "Resolving packages..."; sleep 40
+      - name: 2/4 · Build
+        run: bash finops/notify.sh "2/4 Build" "Compiling on your machine..."; sleep 70
+      - name: 3/4 · Test
+        run: bash finops/notify.sh "3/4 Test" "Running the suite..."; sleep 55
+      - name: 4/4 · Package
+        run: bash finops/notify.sh "4/4 Package" "Bundling artifacts..."; sleep 25
+      - name: Cost report
+        run: |
+          export ELAPSED_SECONDS=$(( $(date +%s) - JOB_START ))
+          bash finops/cost-report.sh
+          bash finops/notify.sh "Done" "Finished on $RUNNER_NAME — see the cost report"
+
+  # -------------------------------------------------------------- Windows ---
+  windows:
+    runs-on: [self-hosted, windows]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start timer & open the live log
+        shell: powershell
+        run: |
+          $epoch = [int][math]::Floor(((Get-Date).ToUniversalTime() - [datetime]'1970-01-01').TotalSeconds)
+          "JOB_START=$epoch" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          Start-Process "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          powershell -ExecutionPolicy Bypass -File finops\notify.ps1 "CI started" "Job landed on $env:RUNNER_NAME"
+      - name: 1/4 · Install dependencies
+        shell: powershell
+        run: |
+          powershell -ExecutionPolicy Bypass -File finops\notify.ps1 "1/4 Install deps" "Resolving packages..."
+          Start-Sleep -Seconds 40
+      - name: 2/4 · Build
+        shell: powershell
+        run: |
+          powershell -ExecutionPolicy Bypass -File finops\notify.ps1 "2/4 Build" "Compiling on your machine..."
+          Start-Sleep -Seconds 70
+      - name: 3/4 · Test
+        shell: powershell
+        run: |
+          powershell -ExecutionPolicy Bypass -File finops\notify.ps1 "3/4 Test" "Running the suite..."
+          Start-Sleep -Seconds 55
+      - name: 4/4 · Package
+        shell: powershell
+        run: |
+          powershell -ExecutionPolicy Bypass -File finops\notify.ps1 "4/4 Package" "Bundling artifacts..."
+          Start-Sleep -Seconds 25
+      - name: Cost report
+        shell: powershell
+        run: |
+          $now = [int][math]::Floor(((Get-Date).ToUniversalTime() - [datetime]'1970-01-01').TotalSeconds)
+          $env:ELAPSED_SECONDS = ($now - [int]$env:JOB_START)
+          powershell -ExecutionPolicy Bypass -File finops\cost-report.ps1
+          powershell -ExecutionPolicy Bypass -File finops\notify.ps1 "Done" "Finished on $env:RUNNER_NAME"
+
+  # ---------------------------------------------------------------- Ubuntu --
+  linux:
+    runs-on: [self-hosted, linux]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start timer & open the live log
+        run: |
+          echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+          URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          (xdg-open "$URL" >/dev/null 2>&1 &) || true
+          bash finops/notify.sh "CI started" "Job landed on $RUNNER_NAME — watch it live"
+      - name: 1/4 · Install dependencies
+        run: bash finops/notify.sh "1/4 Install deps" "Resolving packages..."; sleep 40
+      - name: 2/4 · Build
+        run: bash finops/notify.sh "2/4 Build" "Compiling on your machine..."; sleep 70
+      - name: 3/4 · Test
+        run: bash finops/notify.sh "3/4 Test" "Running the suite..."; sleep 55
+      - name: 4/4 · Package
+        run: bash finops/notify.sh "4/4 Package" "Bundling artifacts..."; sleep 25
+      - name: Cost report
+        run: |
+          export ELAPSED_SECONDS=$(( $(date +%s) - JOB_START ))
+          bash finops/cost-report.sh
+          bash finops/notify.sh "Done" "Finished on $RUNNER_NAME — see the cost report"

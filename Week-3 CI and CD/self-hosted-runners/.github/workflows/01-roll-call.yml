@@ -1,0 +1,52 @@
+name: 01 · Roll Call
+
+# The opener. Fire this and every student laptop lights up at the same time.
+# Teaches: `runs-on` labels are AND-matched, so [self-hosted, windows] only ever
+# lands on a Windows runner — never a Mac. No routing config needed; GitHub tags
+# each runner with self-hosted + its OS + its arch automatically.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  mac:
+    runs-on: [self-hosted, macOS]
+    steps:
+      - name: Wave from the Mac
+        run: |
+          echo "::notice title=Roll Call::$RUNNER_NAME (macOS) is online"
+          osascript -e 'display notification "GitHub just handed you a job!" with title "Roll Call"' || true
+          afplay /System/Library/Sounds/Glass.aiff >/dev/null 2>&1 &
+          echo "### $RUNNER_NAME reported in — macOS / $RUNNER_ARCH" >> "$GITHUB_STEP_SUMMARY"
+
+  windows:
+    runs-on: [self-hosted, windows]
+    steps:
+      - name: Wave from Windows
+        shell: powershell
+        run: |
+          Write-Host "::notice title=Roll Call::$env:RUNNER_NAME (Windows) is online"
+          try {
+            Add-Type -AssemblyName System.Windows.Forms
+            Add-Type -AssemblyName System.Drawing
+            $n = New-Object System.Windows.Forms.NotifyIcon
+            $n.Icon = [System.Drawing.SystemIcons]::Information
+            $n.BalloonTipTitle = "Roll Call"
+            $n.BalloonTipText  = "GitHub just handed you a job!"
+            $n.Visible = $true
+            $n.ShowBalloonTip(4000)
+            [System.Media.SystemSounds]::Exclamation.Play()
+            Start-Sleep -Milliseconds 400
+            $n.Dispose()
+          } catch { }
+          "### $env:RUNNER_NAME reported in — Windows / $env:RUNNER_ARCH" | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
+  linux:
+    runs-on: [self-hosted, linux]
+    steps:
+      - name: Wave from Ubuntu
+        run: |
+          echo "::notice title=Roll Call::$RUNNER_NAME (Ubuntu) is online"
+          notify-send "Roll Call" "GitHub just handed you a job!" || true
+          paplay /usr/share/sounds/freedesktop/stereo/complete.oga >/dev/null 2>&1 &
+          echo "### $RUNNER_NAME reported in — Ubuntu / $RUNNER_ARCH" >> "$GITHUB_STEP_SUMMARY"
