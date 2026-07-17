@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GHA → Jenkins · Translation Drills</title>
+<style>
+  :root{
+    --bg:#0F172A; --card:#1E293B; --card2:#16213B; --border:#334155;
+    --text:#E2E8F0; --muted:#94A3B8; --faint:#64748B;
+    --orange:#F97316; --teal:#2DD4BF; --ghablue:#58A6FF;
+    --code-k:#7DD3FC; --code-s:#86EFAC; --code-c:#64748B; --code-x:#2DD4BF;
+    --serif:'Bookman Old Style','URW Bookman',Georgia,serif;
+    --mono:ui-monospace,'JetBrains Mono','Cascadia Code',Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:var(--mono);padding:28px 20px 60px;min-height:100vh}
+  .wrap{max-width:1200px;margin:0 auto}
+
+  /* ---------- header ---------- */
+  .eyebrow{color:var(--teal);font-size:12px;letter-spacing:.22em;text-transform:uppercase}
+  h1{font-family:var(--serif);font-size:clamp(26px,4vw,40px);font-weight:700;margin:10px 0 8px}
+  h1 .gha{color:var(--ghablue)} h1 .jk{color:var(--orange)}
+  .sub{color:var(--muted);font-size:14px;line-height:1.6;max-width:760px}
+  .sub b{color:var(--teal);font-weight:600}
+
+  /* ---------- nav rail ---------- */
+  .rail{display:flex;gap:8px;flex-wrap:wrap;margin:26px 0 22px}
+  .dot{background:var(--card);border:1px solid var(--border);color:var(--muted);
+       border-radius:8px;padding:6px 11px;font-family:var(--mono);font-size:12px;
+       cursor:pointer;transition:.15s}
+  .dot:hover{border-color:var(--teal);color:var(--text)}
+  .dot.on{background:var(--teal);border-color:var(--teal);color:#06251f;font-weight:700}
+  .dot:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+
+  /* ---------- example header ---------- */
+  .exhead{display:flex;align-items:baseline;gap:14px;margin-bottom:4px;flex-wrap:wrap}
+  .exnum{font-family:var(--serif);font-size:34px;color:var(--orange);font-weight:700;min-width:56px}
+  .extitle{font-family:var(--serif);font-size:clamp(20px,3vw,28px);font-weight:700}
+  .intent{color:var(--muted);font-size:13.5px;margin:2px 0 18px;line-height:1.55}
+
+  /* ---------- panes ---------- */
+  .panes{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:900px){.panes{grid-template-columns:1fr}}
+  .term{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .tbar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card2);
+        border-bottom:1px solid var(--border)}
+  .lights{display:flex;gap:6px}
+  .lt{width:11px;height:11px;border-radius:50%}
+  .lt.r{background:#EF4444}.lt.y{background:#F59E0B}.lt.g{background:#22C55E}
+  .fname{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .badge{margin-left:auto;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+         padding:3px 9px;border-radius:20px;font-weight:700;white-space:nowrap}
+  .badge.gha{color:var(--ghablue);border:1px solid var(--ghablue)}
+  .badge.jk{color:var(--orange);border:1px solid var(--orange)}
+  .code{padding:12px 0;font-size:13px;line-height:1.65;overflow-x:auto}
+  .ln{display:flex;padding:0 14px;border-left:3px solid transparent;white-space:pre}
+  .lno{color:#3d4d66;width:2.2em;flex:none;user-select:none;text-align:right;padding-right:14px}
+  .ln.m{cursor:pointer;border-left-color:rgba(148,163,184,.25)}
+  .ln.m:hover{background:rgba(148,163,184,.07)}
+  .pane-gha .ln.on{background:rgba(88,166,255,.13);border-left-color:var(--ghablue)}
+  .pane-jk  .ln.on{background:rgba(249,115,22,.13);border-left-color:var(--orange)}
+  .k{color:var(--code-k)} .s{color:var(--code-s)} .c{color:var(--code-c);font-style:italic} .x{color:var(--code-x)}
+
+  /* ---------- chips + note ---------- */
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 10px}
+  .chiplabel{color:var(--faint);font-size:11px;letter-spacing:.15em;text-transform:uppercase;
+             align-self:center;margin-right:4px}
+  .chip{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:20px;
+        padding:6px 14px;font-family:var(--mono);font-size:12.5px;cursor:pointer;transition:.15s}
+  .chip:hover{border-color:var(--teal);color:var(--text)}
+  .chip.on{background:rgba(45,212,191,.12);border-color:var(--teal);color:var(--teal);font-weight:700}
+  .chip:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+  .note{background:var(--card2);border:1px solid var(--border);border-left:3px solid var(--teal);
+        border-radius:8px;padding:12px 16px;color:var(--text);font-size:13.5px;line-height:1.65;min-height:46px}
+  .note code{color:var(--code-k)}
+
+  /* ---------- same / diff ---------- */
+  .sd{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  @media (max-width:900px){.sd{grid-template-columns:1fr}}
+  .sdcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;
+          font-size:13px;line-height:1.6;color:var(--muted)}
+  .sdcard h3{font-family:var(--serif);font-size:14px;letter-spacing:.06em;margin-bottom:6px}
+  .sdcard.same h3{color:var(--teal)} .sdcard.diff h3{color:var(--orange)}
+  .sdcard code{color:var(--code-k);font-size:12.5px}
+
+  /* ---------- try it ---------- */
+  .try{margin-top:16px;background:#0B1120;border:1px solid var(--border);border-radius:10px;
+       padding:13px 16px;font-size:13px;line-height:1.6;color:var(--muted)}
+  .try .p{color:var(--teal);font-weight:700;margin-right:8px}
+  .try b{color:var(--text);font-weight:600}
+
+  /* ---------- prev / next ---------- */
+  .navbtns{display:flex;justify-content:space-between;margin-top:26px;gap:12px}
+  .nbtn{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:10px;
+        padding:12px 20px;font-family:var(--mono);font-size:13.5px;cursor:pointer;transition:.15s;max-width:46%}
+  .nbtn:hover:not(:disabled){border-color:var(--orange);color:var(--orange)}
+  .nbtn:disabled{opacity:.3;cursor:default}
+  .nbtn:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+  footer{margin-top:34px;color:var(--faint);font-size:11.5px;text-align:center;letter-spacing:.05em}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Jenkins Crash Course · Translation Drills</div>
+  <h1>Same ideas, <span class="gha">second</span> <span class="jk">dialect</span></h1>
+  <p class="sub">Twelve workflows you already wrote in GitHub Actions, re-spoken as Jenkinsfiles.
+     <b>Click a mapping chip</b> (or any marked line) to trace one concept across both files.
+     Every right-hand pane runs as-is on the JCasC container you already have up:
+     <b>New Item → Pipeline → paste → Build Now</b>.</p>
+
+  <div class="rail" id="rail" role="tablist" aria-label="Examples"></div>
+
+  <div class="exhead"><span class="exnum" id="exnum">01</span><span class="extitle" id="extitle"></span></div>
+  <p class="intent" id="intent"></p>
+
+  <div class="panes">
+    <div class="term pane-gha">
+      <div class="tbar">
+        <span class="lights"><span class="lt r"></span><span class="lt y"></span><span class="lt g"></span></span>
+        <span class="fname">.github/workflows/ci.yml</span>
+        <span class="badge gha">GitHub Actions</span>
+      </div>
+      <div class="code" id="ghapane"></div>
+    </div>
+    <div class="term pane-jk">
+      <div class="tbar">
+        <span class="lights"><span class="lt r"></span><span class="lt y"></span><span class="lt g"></span></span>
+        <span class="fname">Jenkinsfile</span>
+        <span class="badge jk">Jenkins</span>
+      </div>
+      <div class="code" id="jkpane"></div>
+    </div>
+  </div>
+
+  <div class="chips" id="chips"></div>
+  <div class="note" id="note"></div>
+
+  <div class="sd">
+    <div class="sdcard same"><h3>Same idea</h3><div id="same"></div></div>
+    <div class="sdcard diff"><h3>Watch out</h3><div id="diff"></div></div>
+  </div>
+
+  <div class="try" id="tryit"></div>
+
+  <div class="navbtns">
+    <button class="nbtn" id="prev">← Prev</button>
+    <button class="nbtn" id="next">Next →</button>
+  </div>
+  <footer>← / → keys to navigate · GHA→Jenkins Rosetta · Jenkins crash course</footer>
+</div>
+
+<script>
+// Each code line: [mapId or "", "text"]
+const EX = [
+{
+  title:"Hello, pipeline",
+  intent:"The smallest possible CI run — one runner, one job, one step. Learn the skeleton before anything else.",
+  gha:[
+    ["","name: CI"],
+    ["trigger","on: [push]"],
+    ["","jobs:"],
+    ["stage","  hello:"],
+    ["agent","    runs-on: ubuntu-latest"],
+    ["","    steps:"],
+    ["checkout","      - uses: actions/checkout@v4"],
+    ["step",'      - run: echo "Hello, CI"'],
+  ],
+  jk:[
+    ["","pipeline {"],
+    ["agent","    agent any"],
+    ["","    stages {"],
+    ["stage","        stage('Hello') {"],
+    ["","            steps {"],
+    ["step","                sh 'echo \"Hello, CI\"'"],
+    ["","            }"],
+    ["","        }"],
+    ["","    }"],
+    ["","}"],
+  ],
+  maps:[
+    {id:"agent",label:"runs-on ↔ agent",note:"GHA rents you a fresh Ubuntu VM per job. <code>agent any</code> means “run on whatever agent this controller has” — in your JCasC container, that's the controller itself. Nobody provisions machines for you anymore."},
+    {id:"stage",label:"job ↔ stage",note:"A GHA <code>job</code> maps roughly to a Jenkins <code>stage</code>. Stages are the boxes you'll see in the pipeline graph after the build."},
+    {id:"step",label:"run ↔ sh",note:"Nearly identical: both hand a line to a shell. <code>sh</code> is a pipeline step provided by Jenkins core."},
+    {id:"trigger",label:"on: push ↔ (nothing?!)",note:"There is no <code>on:</code> in a Jenkinsfile. Push triggers come from the Jenkins side — a GitHub webhook or job configuration. For today, <b>Build Now</b> is your trigger."},
+    {id:"checkout",label:"checkout ↔ implicit",note:"Pipeline jobs whose Jenkinsfile comes from SCM check out the repo automatically. A pasted-in script checks out nothing — one reason your first ‘real’ build will confuse you."},
+  ],
+  same:"The skeleton is the same three-layer nesting you already know: workflow → job → step becomes pipeline → stage → step.",
+  diff:"Groovy braces instead of YAML indentation, and the trigger lives <i>outside</i> the file. Jenkins hides nothing — everything GitHub did invisibly is now your configuration.",
+  try:"<b>New Item → Pipeline</b>, paste the right-hand side into the script box, <b>Build Now</b>. Open the console log and find your echo."
+},
+{
+  title:"Environment variables",
+  intent:"Global vs scoped variables — the scoping story is identical, only the syntax moves.",
+  gha:[
+    ["","name: CI"],
+    ["","on: [push]"],
+    ["genv","env:"],
+    ["genv","  APP_ENV: test          # workflow-wide"],
+    ["","jobs:"],
+    ["","  build:"],
+    ["","    runs-on: ubuntu-latest"],
+    ["senv","    env:"],
+    ["senv","      DB_HOST: localhost # job-wide"],
+    ["","    steps:"],
+    ["use",'      - run: echo "$APP_ENV on $DB_HOST"'],
+  ],
+  jk:[
+    ["","pipeline {"],
+    ["","    agent any"],
+    ["genv","    environment {"],
+    ["genv","        APP_ENV = 'test'          // pipeline-wide"],
+    ["genv","    }"],
+    ["","    stages {"],
+    ["","        stage('Build') {"],
+    ["senv","            environment {"],
+    ["senv","                DB_HOST = 'localhost' // stage-wide"],
+    ["senv","            }"],
+    ["","            steps {"],
+    ["use","                sh 'echo \"$APP_ENV on $DB_HOST\"'"],
+    ["","            }"],
+    ["","        }"],
+    ["","    }"],
+    ["","}"],
+  ],
+  maps:[
+    {id:"genv",label:"workflow env ↔ pipeline environment{}",note:"Top-level <code>env:</code> becomes an <code>environment {}</code> block directly under <code>pipeline</code>. Visible to every stage."},
+    {id:"senv",label:"job env ↔ stage environment{}",note:"Scoping works the same way: a stage-level <code>environment {}</code> shadows the pipeline-level one, exactly like job-level <code>env:</code> in GHA."},
+    {id:"use",label:"$VAR in shell — identical",note:"Inside <code>sh</code>, the shell expands <code>$APP_ENV</code> just like inside <code>run:</code>. No new syntax to learn at the point of use."},
+  ],
+  same:"Two scoping levels, shell expansion at the point of use — byte-for-byte the same mental model.",
+  diff:"Groovy string rule that will bite you: <code>'single quotes'</code> are literal, <code>\"double quotes\"</code> interpolate <i>before</i> the shell sees them. Prefer single quotes around <code>sh</code> commands so the shell — not Groovy — expands variables. (This matters for secrets in example 06.)",
+  try:"Run it, then swap the <code>sh</code> quotes to double quotes and diff the console output. Same result here — but remember which layer did the expansion."
+},
+{
+  title:"Sequential jobs → stages",
+  intent:"Your build → test → deploy chain. In GHA you wired it with needs:. Jenkins gives you the chain for free.",
+  gha:[
+    ["","jobs:"],
+    ["b","  build:"],
+    ["","    runs-on: ubuntu-latest"],
+    ["","    steps:"],
+    ["b","      - run: make build"],
+    ["t","  test:"],
+    ["chain","    needs: build"],
+    ["","    runs-on: ubuntu-latest"],
+    ["","    steps:"],
+    ["t","      - run: make test"],
+    ["d","  deploy:"],
+    ["chain","    needs: test"],
+    ["","    runs-on: ubuntu-latest"],
+    ["","    steps:"],
+    ["d","      - run: make deploy"],
+  ],
+  jk:[
+    ["","pipeline {"],
+    ["","    agent any"],
+    ["","    stages {"],
+    ["b","        stage('Build')  { steps { sh 'make build' } }"],
+    ["t","        stage('Test')   { steps { sh 'make test' } }"],
+    ["d","        stage('Deploy') { steps { sh 'make deploy' } }"],
+    ["","    }"],
+    ["","}"],
+  ],
+  maps:[
+    {id:"chain",label:"needs: ↔ stage order",note:"There is no <code>needs:</code> — declarative stages run top to bottom, and a failing stage stops the ones after it. The file's order <i>is</i> the dependency graph."},
+    {id:"b",label:"build ↔ Build",note:"One GHA job collapses into one Jenkins stage. Note the one-liner form: <code>{ steps { sh '…' } }</code> on a single line is legal Groovy."},
+    {id:"t",label:"test ↔ Test",note:"Same collapse. Fifteen YAML lines became three Groovy lines — sequential chains are where Jenkinsfiles are actually <i>shorter</i>."},
+  ],
+  same:"Build must pass before test, test before deploy. Failure stops the chain in both systems.",
+  diff:"The big one: GHA jobs run on <b>fresh runners</b> — files don't survive between jobs without upload/download-artifact. Jenkins stages share <b>one workspace on one agent</b>, so <code>make build</code>'s output is just… still there for <code>make test</code>. No artifact shuffling for intermediate files.",
+  try:"Replace the makes with <code>sh 'date >> log.txt'</code> in each stage and <code>sh 'cat log.txt'</code> at the end — three timestamps, one workspace. Try doing that in GHA without artifacts."
+},
+{
+  title:"Parallel execution",
+  intent:"Unit tests and lint don't need each other. Run them at the same time — but notice whose default is whose opt-in.",
+  gha:[
+    ["","jobs:"],
+    ["u","  unit:"],
+    ["","    runs-on: ubuntu-latest"],
+    ["","    steps:"],
+    ["u","      - run: npm run test:unit"],
+    ["l","  lint:"],
+    ["","    runs-on: ubuntu-latest"],
+    ["","    steps:"],
+    ["l","      - run: npm run lint"],
+  ],
+  jk:[
+    ["","pipeline {"],
+    ["","    agent any"],
+    ["","    stages {"],
+    ["","        stage('Checks') {"],
+    ["par","            parallel {"],
+    ["u","                stage('Unit') { steps { sh 'npm run test:unit' } }"],
+    ["l","                stage('Lint') { steps { sh 'npm run lint' } }"],
+    ["par","            }"],
+    ["","        }"],
+    ["","    }"],
+    ["","}"],
+  ],
+  maps:[
+    {id:"par",label:"no needs: ↔ parallel {}",note:"In GHA, jobs are parallel <i>unless</i> you add <code>needs:</code>. In Jenkins, stages are sequential <i>unless</i> you wrap them in <code>parallel {}</code>. The defaults are perfectly inverted."},
+    {id:"u",label:"unit ↔ Unit",note:"A parallel branch is just a nested stage. The pipeline view draws them side by side."},
+    {id:"l",label:"lint ↔ Lint",note:"If any parallel branch fails, the enclosing stage fails. Add <code>failFast true</code> above <code>parallel</code> to kill siblings on first failure — GHA's <code>fail-fast</code> equivalent."},
+  ],
+  same:"Independent checks fan out, results join before the next thing runs.",
+  diff:"Inverted defaults: GHA is parallel-by-default / sequential-by-opt-in; Jenkins is the mirror image. Also: both branches here run on the <i>same</i> agent and share a workspace — true isolation needs per-stage agents (example 08).",
+  try:"Add <code>sleep 10</code> to both branches and run. Wall time ≈ 10s, not 20s — check the stage view's timing columns."
+},
+{
+  title:"Conditionals",
+  intent:"Deploy only from main. Your if: expression becomes a structured when block.",
+  gha:[
+    ["","jobs:"],
+    ["","  deploy:"],
+    ["cond","    if: github.ref == 'refs/heads/main'"],
+    ["","    runs-on: ubuntu-latest"],
+    ["","    steps:"],
+    ["","      - run: ./deploy.sh"],
+  ],
+  jk:[
+    ["","pipeline {"],
+    ["","    agent any"],
+    ["","    stages {"],
+    ["","        stage('Deploy') {"],
+    ["cond","            when { branch 'main' }"],
+    ["","            steps {"],
+    ["","                sh './deploy.sh'"],
+    ["","            }"],
+    ["","        }"],
+    ["","    }"],
+    ["","}"],
+  ],
+  maps:[
+    {id:"cond",label:"if: ↔ when {}",note:"<code>when { branch 'main' }</code> reads better than the ref comparison — but it only knows the branch in a <b>Multibranch Pipeline</b> job (Jenkins's version of GHA's automatic per-branch runs). In a plain pasted pipeline, use <code>when { expression { env.APP_ENV == 'prod' } }</code> instead."},
+  ],
+  same:"A skipped stage shows as skipped in the UI, not failed — same visual grammar as a skipped GHA job.",
+  diff:"GHA's <code>if:</code> is one expression language everywhere. Jenkins <code>when</code> is structured: <code>branch</code>, <code>tag</code>, <code>changeset</code>, <code>environment</code>, <code>allOf/anyOf/not</code> for combinators — with <code>expression {}</code> as the escape hatch to raw Groovy.",
+  try:"Paste and run: Deploy shows <b>skipped</b> (no branch context in a script job). Change the condition to <code>expression { true }</code> and rerun to see it fire."
+},
+{
+  title:"Secrets",
+  intent:"secrets.API_KEY becomes the Credentials store — same masking, different home.",
+  gha:[
+    ["","jobs:"],
+    ["","  deploy:"],
+    ["","    runs-on: ubuntu-latest"],
+    ["","    steps:"],
+    ["","      - run: ./deploy.sh"],
+    ["","        env:"],
+    ["sec","          API_KEY: ${{ secrets.API_KEY }}"],
+  ],
+  jk:[
+    ["","pipeline {"],
+    ["","    agent any"],
+    ["","    environment {"],
+    ["sec","        API_KEY = credentials('api-key')"],
+    ["","    }"],
+    ["","    stages {"],
+    ["","        stage('Deploy') {"],
+    ["","            steps {"],
+    ["","                sh './deploy.sh'"],
+    ["","            }"],
+    ["","        }"],
+    ["","    }"],
+    ["","}"],
+  ],
+  maps:[
+    {id:"sec",label:"secrets.X ↔ credentials('id')",note:"Repo Settings → Secrets becomes <b>Manage Jenkins → Credentials</b>. <code>credentials('api-key')</code> looks the secret up by its ID and binds it as an env var. Console output masks it as <code>****</code> — same courtesy GHA gave you."},
+  ],
+  same:"Secrets never live in the file — only a reference does. Logs are masked in both systems.",
+  diff:"Jenkins credentials are <i>typed</i>. Bind a username+password credential and you get three vars for free: <code>API_KEY</code> (user:pass), <code>API_KEY_USR</code>, <code>API_KEY_PSW</code>. And per example 02: never wrap secrets in Groovy double quotes inside <code>sh</code> — Groovy would interpolate the value into the command line before masking can help you.",
+  try:"<b>Manage Jenkins → Credentials → Global → Add</b>: kind ‘Secret text’, ID <code>api-key</code>, any value. Change the step to <code>sh 'echo $API_KEY'</code>, run, and admire the <code>****</code> in the log."
+},
+{
+  title:"Cleanup & notifications",
+  intent:"Your if: always() / if: failure() tail-steps get a dedicated, honest home: the post block.",
+  gha:[
+    ["","jobs:"],
+    ["","  test:"],
+    ["","    runs-on: ubuntu-latest"],
+    ["","    steps:"],
+    ["","      - run: npm test"],
+    ["ok","      - run: ./notify.sh success"],
+    ["ok","        if: success()"],
+    ["bad","      - run: ./notify.sh failed"],
+    ["bad","        if: failure()"],
+    ["alw","      - run: rm -rf tmp/"],
+    ["alw","        if: always()"],
+  ],
+  jk:[
+    ["","pipeline {"],
+    ["","    agent any"],
+    ["","    stages {"],
+    ["","        stage('Test') {"],
+    ["","            steps { sh 'npm test' }"],
+    ["","        }"],
+    ["","    }"],
+    ["","    post {"],
+    ["ok","        success { sh './notify.sh success' }"],
+    ["bad","        failure { sh './notify.sh failed' }"],
+    ["alw","        always  { sh 'rm -rf tmp/' }"],
+    ["","    }"],
+    ["","}"],
+  ],
+  maps:[
+    {id:"alw",label:"if: always() ↔ post.always",note:"Instead of decorating trailing steps with conditions, Jenkins gives cleanup a first-class block. <code>post</code> runs after the stages regardless of how they ended."},
+    {id:"ok",label:"if: success() ↔ post.success",note:"Also available: <code>unstable</code>, <code>changed</code> (status differs from last build — great for ‘it's fixed!’ pings), <code>fixed</code>, <code>aborted</code>, <code>cleanup</code>."},
+    {id:"bad",label:"if: failure() ↔ post.failure",note:"This is where Slack/email notifications live in real Jenkinsfiles. A <code>post</code> block can also sit <i>inside a single stage</i> for stage-local cleanup."},
+  ],
+  same:"Same four core statuses — success, failure, always, plus richer variants.",
+  diff:"Structure instead of decoration: GHA scatters conditions across steps; Jenkins collects outcomes in one block, and lets you attach one per stage too. Most people find real Jenkinsfiles easier to audit for ‘what happens on failure’.",
+  try:"Change <code>npm test</code> to <code>exit 1</code> and run — watch <code>failure</code> and <code>always</code> fire while <code>success</code> stays silent."
+},
+{
+  title:"Containers as build environments",
+  intent:"Yesterday's npm: not found error, solved the same way GHA solves it — run the steps inside an image.",
+  gha:[
+    ["","jobs:"],
+    ["","  build:"],
+    ["","    runs-on: ubuntu-latest"],
+    ["ctr","    container: node:20-alpine"],
+    ["","    steps:"],
+    ["","      - run: node --version"],
+  ],
+  jk:[
+    ["","pipeline {"],
+    ["ctr","    agent {"],
+    ["ctr","        docker { image 'node:20-alpine' }"],
+    ["ctr","    }"],
+    ["","    stages {"],
+    ["","        stage('Build') {"],
+    ["","            steps {"],
+    ["","                sh 'node --version'"],
+    ["","            }"],
+    ["","        }"],
+    ["","    }"],
+    ["","}"],
+  ],
+  maps:[
+    {id:"ctr",label:"container: ↔ agent { docker }",note:"Jenkins pulls the image, starts a container, mounts the workspace, and runs every <code>sh</code> step inside it. Toolchain problems evaporate — the agent needs only Docker, not Node."},
+  ],
+  same:"Steps execute inside the image; the workspace is mounted through; you pin toolchain versions in one line.",
+  diff:"Jenkins can do this <b>per stage</b>: <code>agent { docker { image 'node:20' } }</code> on one stage, <code>golang:1.22</code> on the next — where GHA would force separate jobs. Requires the Jenkins container to reach Docker (we mounted the socket in your JCasC setup); if you see <code>docker: not found</code>, that mount is missing.",
+  try:"Run it — first run pulls the image (slow), second run is instant. Then add a second stage with a <code>golang</code> agent and run <code>go version</code>."
+},
+{
+  title:"Matrix builds",
+  intent:"Test across Node 18/20/22. Same concept, noticeably more ceremony — this is peak Jenkins verbosity.",
+  gha:[
+    ["","jobs:"],
+    ["","  test:"],
+    ["","    runs-on: ubuntu-latest"],
+    ["mtx","    strategy:"],
+    ["mtx","      matrix:"],
+    ["ax","        node: [18, 20, 22]"],
+    ["","    steps:"],
+    ["use",'      - run: echo "Node ${{ matrix.node }}"'],
+  ],
+  jk:[
+    ["","pipeline {"],
+    ["","    agent any"],
+    ["","    stages {"],
+    ["","        stage('Test') {"],
+    ["mtx","            matrix {"],
+    ["ax","                axes {"],
+    ["ax","                    axis {"],
+    ["ax","                        name 'NODE'"],
+    ["ax","                        values '18', '20', '22'"],
+    ["ax","                    }"],
+    ["ax","                }"],
+    ["","                stages {"],
+    ["","                    stage('Run') {"],
+    ["","                        steps {"],
+    ["use","                            sh 'echo \"Node $NODE\"'"],
+    ["","                        }"],
+    ["","                    }"],
+    ["","                }"],
+    ["mtx","            }"],
+    ["","        }"],
+    ["","    }"],
+    ["","}"],
+  ],
+  maps:[
+    {id:"mtx",label:"strategy.matrix ↔ matrix {}",note:"Same fan-out: every combination of axis values gets its own run of the inner stages, in parallel."},
+    {id:"ax",label:"node: [...] ↔ axis { }",note:"One YAML line became seven Groovy lines. Multiple <code>axis</code> blocks multiply into a full cross-product, and <code>excludes {}</code> prunes combinations — GHA's <code>exclude:</code>."},
+    {id:"use",label:"matrix.node ↔ $NODE",note:"Axis values arrive as plain environment variables — no special expression syntax at the point of use."},
+  ],
+  same:"Cross-product fan-out with per-cell parallelism and excludable combinations.",
+  diff:"Verbosity, honestly. Also note the matrix here only <i>sets a variable</i> — to actually run different Node versions per cell, pair it with a per-cell docker agent: <code>agent { docker { image \"node:${NODE}-alpine\" } }</code> inside the inner stage.",
+  try:"Run it and open the build — three parallel cells appear, one per axis value. Add a second axis (<code>name 'OS'</code>) and watch 3 become 6."
+},
+{
+  title:"Artifacts",
+  intent:"Keep the build output after the workspace is gone. upload-artifact becomes one built-in step.",
+  gha:[
+    ["","jobs:"],
+    ["","  build:"],
+    ["","    runs-on: ubuntu-latest"],
+    ["","    steps:"],
+    ["","      - run: npm run build"],
+    ["art","      - uses: actions/upload-artifact@v4"],
+    ["art","        with:"],
+    ["art","          name: dist"],
+    ["art","          path: dist/"],
+  ],
+  jk:[
+    ["","pipeline {"],
+    ["","    agent any"],
+    ["","    stages {"],
+    ["","        stage('Build') {"],
+    ["","            steps {"],
+    ["","                sh 'npm run build'"],
+    ["art","                archiveArtifacts artifacts: 'dist/**', fingerprint: true"],
+    ["","            }"],
+    ["","        }"],
+    ["","    }"],
+    ["","}"],
+  ],
+  maps:[
+    {id:"art",label:"upload-artifact ↔ archiveArtifacts",note:"Archived files attach to the build page — same as the artifacts panel on a GHA run. <code>fingerprint: true</code> checksums them so Jenkins can trace which build produced which binary across jobs."},
+  ],
+  same:"Files outlive the workspace and hang off the run's page, downloadable from the UI.",
+  diff:"Two different tools for two jobs GHA lumps together: <code>archiveArtifacts</code> is for <i>keeping</i> things (humans, later builds); <code>stash</code>/<code>unstash</code> is for <i>passing</i> files between stages that run on different agents mid-pipeline. Remember example 03 — stages on one agent don't need either.",
+  try:"Fake it: <code>sh 'mkdir -p dist && date > dist/build.txt'</code> before the archive line. After the run, the file appears on the build page under <b>Artifacts</b>."
+},
+{
+  title:"Scheduled runs",
+  intent:"Nightly jobs. Same cron syntax — plus one Jenkins letter that fixes a problem GHA never let you see.",
+  gha:[
+    ["","name: Nightly"],
+    ["cr","on:"],
+    ["cr","  schedule:"],
+    ["cr","    - cron: '0 4 * * *'"],
+    ["","jobs:"],
+    ["","  report:"],
+    ["","    runs-on: ubuntu-latest"],
+    ["","    steps:"],
+    ["","      - run: ./nightly-report.sh"],
+  ],
+  jk:[
+    ["","pipeline {"],
+    ["","    agent any"],
+    ["cr","    triggers {"],
+    ["cr","        cron('H 4 * * *')"],
+    ["cr","    }"],
+    ["","    stages {"],
+    ["","        stage('Nightly') {"],
+    ["","            steps { sh './nightly-report.sh' }"],
+    ["","        }"],
+    ["","    }"],
+    ["","}"],
+  ],
+  maps:[
+    {id:"cr",label:"on: schedule ↔ triggers { cron }",note:"Same five-field cron — but <code>H</code> replaces the minute. <code>H</code> hashes the job name to a stable pseudo-random minute, so fifty nightly jobs spread across the 4 o'clock hour instead of stampeding your agents at 4:00 sharp. GHA has the same thundering-herd problem (popular schedule times run late) — it just never told you."},
+  ],
+  same:"Standard cron fields, and the schedule lives in the file, in version control.",
+  diff:"A trigger written in a Jenkinsfile only registers <b>after the first run</b> of that pipeline — Jenkins has to execute the file once to learn its triggers exist. Run it manually once after adding <code>triggers {}</code>, or your nightly job will quietly never fire.",
+  try:"Set <code>cron('H/2 * * * *')</code> (every ~2 min), Build Now once to register it, then watch the next builds start themselves. Set it back before you forget."
+},
+{
+  title:"Manual approval gates",
+  intent:"Human sign-off before production. GHA hides this in repo settings; Jenkins puts it in the code.",
+  gha:[
+    ["","jobs:"],
+    ["","  deploy:"],
+    ["","    runs-on: ubuntu-latest"],
+    ["gate","    environment: production"],
+    ["gate","    # reviewers configured in repo Settings → Environments"],
+    ["","    steps:"],
+    ["","      - run: ./deploy.sh"],
+  ],
+  jk:[
+    ["","pipeline {"],
+    ["","    agent any"],
+    ["","    stages {"],
+    ["","        stage('Approve') {"],
+    ["","            steps {"],
+    ["gate","                timeout(time: 1, unit: 'HOURS') {"],
+    ["gate","                    input message: 'Deploy to production?', ok: 'Ship it'"],
+    ["gate","                }"],
+    ["","            }"],
+    ["","        }"],
+    ["","        stage('Deploy') {"],
+    ["","            steps { sh './deploy.sh' }"],
+    ["","        }"],
+    ["","    }"],
+    ["","}"],
+  ],
+  maps:[
+    {id:"gate",label:"environment reviewers ↔ input",note:"<code>input</code> pauses the pipeline and renders a button in the UI. The <code>timeout</code> wrapper is essential — without it, an unanswered prompt holds an executor <b>forever</b>. GHA's version is repo <i>configuration</i>; Jenkins's is <i>code</i>, so it's reviewable in the same PR as the deploy step."},
+  ],
+  same:"A human stands between CI and production; approvals are recorded with who clicked and when.",
+  diff:"Everything approval-related is expressible in the file: custom prompt, button text, <code>submitter 'sagyam,leads'</code> to restrict who may click, even parameters the approver fills in that flow into the deploy stage.",
+  try:"Run it, hover the paused <b>Approve</b> stage, click <b>Ship it</b>. Then run again and let the timeout expire — the build aborts instead of hanging. That timeout is the difference between a gate and a leak."
+},
+];
+
+// ---------- syntax highlighting ----------
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+const JKW=/\b(pipeline|agent|stages|stage|steps|sh|echo|environment|when|post|parallel|matrix|axes|axis|triggers|cron|input|timeout|docker|image|branch|expression|credentials|archiveArtifacts|always|success|failure|unstable|name|values|any|none)\b/g;
+function hl(line,lang){
+  const toks=[];
+  const put=(m,c)=>{toks.push([c,m]);return "\u0000"+(toks.length-1)+"\u0000";};
+  let s=line;
+  if(lang==="yaml") s=s.replace(/#.*$/,m=>put(m,"c"));
+  else s=s.replace(/\/\/.*$/,m=>put(m,"c"));
+  s=s.replace(/\$\{\{[^}]*\}\}/g,m=>put(m,"x"));
+  s=s.replace(/'[^']*'|"[^"]*"/g,m=>put(m,"s"));
+  if(lang==="yaml") s=s.replace(/^(\s*(?:-\s*)?)([A-Za-z0-9_.-]+)(?=:(?:\s|$))/,(m,a,b)=>a+put(b,"k"));
+  else s=s.replace(JKW,m=>put(m,"k"));
+  s=s.replace(/\$[A-Za-z_][A-Za-z0-9_]*/g,m=>put(m,"x"));
+  s=esc(s);
+  return s.replace(/\u0000(\d+)\u0000/g,(m,i)=>`<span class="${toks[i][0]}">${esc(toks[i][1])}</span>`);
+}
+
+// ---------- render ----------
+const $=id=>document.getElementById(id);
+let cur=0, activeMap=null;
+
+function pane(el,lines,lang){
+  el.innerHTML=lines.map(([id,txt],i)=>
+    `<div class="ln${id?" m":""}"${id?` data-m="${id}"`:""}><span class="lno">${i+1}</span><span>${hl(txt,lang)||"&nbsp;"}</span></div>`
+  ).join("");
+}
+
+function setMap(id){
+  activeMap=id;
+  document.querySelectorAll(".ln.m").forEach(ln=>ln.classList.toggle("on",ln.dataset.m===id));
+  document.querySelectorAll(".chip").forEach(ch=>ch.classList.toggle("on",ch.dataset.m===id));
+  const m=EX[cur].maps.find(x=>x.id===id);
+  $("note").innerHTML=m?m.note:"Click a mapping to trace it across both files.";
+}
+
+function render(i){
+  cur=i;
+  const ex=EX[i];
+  $("exnum").textContent=String(i+1).padStart(2,"0");
+  $("extitle").textContent=ex.title;
+  $("intent").textContent=ex.intent;
+  pane($("ghapane"),ex.gha,"yaml");
+  pane($("jkpane"),ex.jk,"groovy");
+  $("chips").innerHTML=`<span class="chiplabel">Trace</span>`+ex.maps.map(m=>
+    `<button class="chip" data-m="${m.id}">${m.label}</button>`).join("");
+  $("same").innerHTML=ex.same;
+  $("diff").innerHTML=ex.diff;
+  $("tryit").innerHTML=`<span class="p">$</span>${ex.try}`;
+  $("prev").disabled=i===0;
+  $("next").disabled=i===EX.length-1;
+  document.querySelectorAll(".dot").forEach((d,k)=>d.classList.toggle("on",k===i));
+  setMap(ex.maps[0].id);
+}
+
+// nav rail
+$("rail").innerHTML=EX.map((ex,i)=>
+  `<button class="dot" data-i="${i}" title="${ex.title}">${String(i+1).padStart(2,"0")}</button>`).join("");
+$("rail").addEventListener("click",e=>{
+  const d=e.target.closest(".dot"); if(d) render(+d.dataset.i);
+});
+
+// chips + line clicks (delegation)
+document.addEventListener("click",e=>{
+  const ch=e.target.closest(".chip"); if(ch){setMap(ch.dataset.m);return;}
+  const ln=e.target.closest(".ln.m"); if(ln){setMap(ln.dataset.m);}
+});
+
+$("prev").addEventListener("click",()=>cur>0&&render(cur-1));
+$("next").addEventListener("click",()=>cur<EX.length-1&&render(cur+1));
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowLeft"&&cur>0)render(cur-1);
+  if(e.key==="ArrowRight"&&cur<EX.length-1)render(cur+1);
+});
+
+render(0);
+</script>
+</body>
+</html>

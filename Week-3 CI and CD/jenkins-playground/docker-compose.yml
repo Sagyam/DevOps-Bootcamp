@@ -12,9 +12,7 @@ services:
     volumes:
       # Mount the JCasC config read-only so you can edit it and just restart.
       - ./casc:/var/jenkins_home/casc:ro
-      # No named volume on jenkins_home => every `up` is a clean slate.
-      # Uncomment to persist jobs/build history across restarts:
-      # - jenkins_home:/var/jenkins_home
+      - jenkins_home:/var/jenkins_home
 
-# volumes:
-#   jenkins_home:
+volumes:
+  jenkins_home:
