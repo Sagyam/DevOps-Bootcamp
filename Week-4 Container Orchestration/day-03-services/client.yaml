@@ -11,3 +11,11 @@ spec:
     - name: curl
       image: curlimages/curl:latest   # utility image; 'latest' is fine for a scratch client
       command: ["sleep", "infinity"]
+      resources:
+        limits:
+          cpu: "1"      # 1 CPU core
+          memory: "512Mi" # 512 Megabytes
+        requests:
+          cpu: "0.5"    # 0.5 CPU core
+          memory: "256Mi" # 256 Megabytes
+
