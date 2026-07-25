@@ -1,0 +1,16 @@
+# Tells Grafana to load every dashboard JSON file it finds in the mounted
+# directory. Dashboards-as-code: edit in the UI to explore, then export the
+# JSON back into this folder so the change survives `docker compose down`.
+apiVersion: 1
+
+providers:
+  - name: chiya
+    orgId: 1
+    folder: 'Chiya Shop'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

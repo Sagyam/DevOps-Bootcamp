@@ -1,0 +1,99 @@
+// ===========================================================================
+// Grafana Alloy -- the agent that moves logs from containers into Loki.
+//
+// MENTAL MODEL. Nothing in our application knows Loki exists. The app writes
+// JSON to stdout; Docker captures stdout; Alloy reads it from the Docker API
+// and ships it. That decoupling is deliberate: you can swap Loki for anything
+// else without touching a line of application code.
+//
+// This file is a pipeline read top to bottom. Each block names the next one
+// in `forward_to`, so you can trace the path a log line takes:
+//
+//   discovery.docker  -> find containers
+//   discovery.relabel -> decide what to call them
+//   loki.source.docker-> read their stdout
+//   loki.process      -> parse JSON, promote `level` to a label
+//   loki.write        -> push to Loki
+// ===========================================================================
+
+// --- 1. Find the containers ------------------------------------------------
+// Talks to the Docker daemon and lists running containers. The filter keeps us
+// to this compose project, so unrelated containers on your laptop stay out.
+discovery.docker "compose" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "5s"
+
+  filter {
+    name   = "label"
+    values = ["com.docker.compose.project=chiya-day1"]
+  }
+}
+
+// --- 2. Turn Docker metadata into labels we want ---------------------------
+// LABEL DISCIPLINE, the most important idea in this file.
+//
+// In Loki, every unique combination of labels is a separate "stream" with its
+// own index and its own set of files. Labels are cheap to filter on and
+// expensive to have many of. A label whose value is unbounded -- requestId,
+// user id, URL with an id in it -- creates a new stream per value and will
+// destroy a Loki cluster. This is called cardinality explosion.
+//
+// Rule of thumb: labels answer "which pile of logs", fields answer "what
+// happened". We keep three labels. Everything else stays inside the JSON.
+discovery.relabel "compose" {
+  targets = discovery.docker.compose.targets
+
+  // The compose service name: api, nginx, postgres, loadgen. Small, fixed set.
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  // The container name, e.g. "chiya-day1-api-2". Also small and fixed, and it
+  // is how you tell the two API replicas apart.
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+}
+
+// --- 3. Read stdout ---------------------------------------------------------
+loki.source.docker "compose" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.compose.output
+  labels     = { job = "chiya" }
+  forward_to = [loki.process.parse.receiver]
+}
+
+// --- 4. Parse -------------------------------------------------------------
+loki.process "parse" {
+  // stage.json pulls named fields OUT of the log line into a temporary
+  // "extracted map". It does not modify the line itself -- Loki still stores
+  // the full original JSON, which is what you want.
+  stage.json {
+    expressions = {
+      level = "level",
+    }
+  }
+
+  // stage.labels promotes an extracted value to a real Loki label.
+  // `level` is safe: it has about five possible values, ever.
+  // If a line has no `level` field (nginx's error_log, a stack trace,
+  // postgres startup output) this stage simply skips it and the line is still
+  // stored -- just without a level label.
+  stage.labels {
+    values = {
+      level = "",
+    }
+  }
+
+  forward_to = [loki.write.default.receiver]
+}
+
+// --- 5. Ship ---------------------------------------------------------------
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

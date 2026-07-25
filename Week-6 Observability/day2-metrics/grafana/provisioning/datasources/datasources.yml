@@ -1,0 +1,25 @@
+# CHANGED SINCE DAY 1: Prometheus added, and it is now the default datasource
+# (you will spend most of today in PromQL rather than LogQL).
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      # Must be >= the scrape_interval in prometheus.yml. Grafana uses it to
+      # pick a sane default for $__rate_interval, and getting it wrong is the
+      # usual cause of rate() graphs full of gaps.
+      timeInterval: 5s
+
+  - name: Loki
+    type: loki
+    uid: loki
+    access: proxy
+    url: http://loki:3100
+    isDefault: false
+    jsonData:
+      maxLines: 1000

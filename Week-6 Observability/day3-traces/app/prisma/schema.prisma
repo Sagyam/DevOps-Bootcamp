@@ -1,0 +1,33 @@
+// Two tables. That is the whole domain model, and it is deliberately small:
+// this lab is about telemetry, not about database design.
+
+generator client {
+  provider = "prisma-client-js"
+  // "native" covers your laptop if you ever run this outside Docker.
+  // "linux-musl-openssl-3.0.x" is the target for the node:22-alpine image.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tea {
+  id       Int     @id @default(autoincrement())
+  name     String  @unique
+  priceNpr Int
+  stock    Int
+  orders   Order[]
+}
+
+model Order {
+  id        Int      @id @default(autoincrement())
+  tea       Tea      @relation(fields: [teaId], references: [id])
+  teaId     Int
+  quantity  Int
+  totalNpr  Int
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

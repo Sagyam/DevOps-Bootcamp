@@ -1,0 +1,49 @@
+# ===========================================================================
+# Prometheus. The entire configuration is "who do I ask, and how often".
+#
+# Prometheus is a pull system: it reaches out to targets on a timer and stores
+# whatever text they return. Nothing sends metrics TO Prometheus. That design
+# has consequences you can feel in this file -- notably that Prometheus needs
+# to discover targets, which is what scrape_configs is for.
+# ===========================================================================
+
+global:
+  # Every 5 seconds. Aggressive, chosen so the lab feels responsive.
+  # Production is usually 15-60s: each scrape costs network, CPU and, more
+  # importantly, one stored sample per series per scrape. Halving the interval
+  # doubles your storage.
+  scrape_interval: 5s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # ------------------------------------------------------------------------
+  # The application. There are TWO api containers and we do not know their IPs.
+  #
+  # A static target list would be wrong the moment a replica restarted. So we
+  # ask Docker's DNS instead: an A-record lookup on `api` returns every replica
+  # IP, and Prometheus creates one target per address. This is the simplest
+  # form of service discovery, and the same idea scales up to the Kubernetes,
+  # EC2 and Consul discovery mechanisms.
+  #
+  # Prometheus attaches `job="chiya-api"` and `instance="<ip>:3000"` to every
+  # series it collects here. That is why metrics.ts deliberately does not set
+  # its own instance label -- the scraper already knows who it is talking to.
+  # ------------------------------------------------------------------------
+  - job_name: chiya-api
+    metrics_path: /metrics
+    dns_sd_configs:
+      - names: ['api']
+        type: A
+        port: 3000
+
+  # nginx, via the translation sidecar.
+  - job_name: nginx
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+
+  # Prometheus scraping itself. Not vanity: prometheus_tsdb_head_series tells
+  # you how many time series you are storing, which is the number that decides
+  # whether your monitoring survives. There is a panel for it on the dashboard.
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']

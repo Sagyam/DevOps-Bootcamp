@@ -1,0 +1,190 @@
+# ===========================================================================
+# Day 2 -- Metrics
+#
+# Ten services. Two are new since yesterday (prometheus, nginx-exporter) and
+# the application now exposes /metrics. Everything else is Day 1, unchanged.
+#
+# Read them in this order:
+#
+#   postgres  the database
+#   migrate   one-shot: creates tables, seeds the menu, then exits
+#   api       the NestJS application, TWO replicas
+#   nginx     load balancer and edge logger
+#   loadgen   synthetic traffic so the dashboards are never empty
+#   loki           stores logs
+#   alloy          reads container stdout and ships it to loki
+#   prometheus     NEW -- scrapes /metrics on a timer and stores numbers
+#   nginx-exporter NEW -- translates nginx stub_status into Prometheus format
+#   grafana        reads both and draws
+#
+# Contrast the two pipelines, because they run in opposite directions:
+#
+#   logs     app -> stdout -> alloy -> loki          (the app PUSHES)
+#   metrics  prometheus -> app:3000/metrics          (the scraper PULLS)
+# ===========================================================================
+
+# An explicit project name. Alloy filters containers by this label, so if you
+# rename it, update alloy/config.alloy too.
+name: chiya-day2
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: chiya
+      POSTGRES_PASSWORD: chiya
+      POSTGRES_DB: chiya
+    # The healthcheck is what makes `depends_on: service_healthy` meaningful.
+    # Without it, "started" only means the container process exists, and the
+    # API races the database to be ready.
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U chiya -d chiya']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # One-shot job. `prisma db push` creates the tables from schema.prisma, then
+  # seed.js inserts the menu, then the container exits 0.
+  #
+  # Why a separate service instead of doing this in the API's start command?
+  # Because we run two API replicas, and two processes running `db push`
+  # against the same empty database at the same time is a race worth avoiding.
+  # This is the compose equivalent of a Kubernetes init container.
+  migrate:
+    build: ./app
+    command: sh -c "npx prisma db push --skip-generate && node dist/seed.js"
+    environment:
+      DATABASE_URL: postgresql://chiya:chiya@postgres:5432/chiya
+      SERVICE_NAME: migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  api:
+    build: ./app
+    # TWO replicas. This is not showing off: aggregating logs from more than
+    # one instance is the entire reason a log stack exists. With one container
+    # you would just run `docker logs`.
+    #
+    # Because there are two, we cannot set container_name and we cannot publish
+    # ports here -- both would collide. All traffic goes through nginx.
+    deploy:
+      replicas: 2
+    environment:
+      DATABASE_URL: postgresql://chiya:chiya@postgres:5432/chiya
+      SERVICE_NAME: api
+      # <<< THE DIAL FOR TODAY'S MAIN EXERCISE >>>
+      # Start at info. Change to debug, `docker compose up -d api`, and watch
+      # the "Log lines / sec" panel in Grafana.
+      LOG_LEVEL: info
+      # Fraction of orders that hit a simulated payment gateway failure.
+      # Set to 0 for a quiet dashboard, 0.5 for a loud one.
+      PAYMENT_FAILURE_RATE: '0.08'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - '8080:8080'
+    volumes:
+      # :ro because nginx has no business writing to its own config.
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+
+  loadgen:
+    image: node:22-alpine
+    command: node /loadgen/generate.js
+    environment:
+      # Through nginx, not straight to the API -- otherwise the nginx access
+      # log stays empty and the load balancing is never exercised.
+      TARGET: http://nginx:8080
+      RPS: '20'
+    volumes:
+      - ./loadgen:/loadgen:ro
+    depends_on:
+      - nginx
+
+  # --------------------------------------------------------------------- LGT
+  loki:
+    image: grafana/loki:3.7.4
+    # Runs on the config baked into the image: single binary, filesystem
+    # storage, no object store. Fine for a laptop, wrong for production.
+    # Storage is inside the container, so `docker compose down` wipes it.
+    ports:
+      - '3100:3100'
+
+  alloy:
+    image: grafana/alloy:v1.18.0
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      # Alloy reads container logs through the Docker API, so it needs the
+      # socket. Be aware of what you just did: access to this socket is
+      # equivalent to root on the host. In production you would use a log
+      # driver or a read-only socket proxy instead.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    # The alloy image runs as a non-root user who is not in the docker group,
+    # so it cannot open the socket. Running as root is the pragmatic fix for a
+    # lab. See the note above about why this is not a production pattern.
+    user: root
+    ports:
+      # Alloy's own UI. Genuinely useful: it draws the pipeline in this file as
+      # a graph and lets you inspect what is flowing through each stage.
+      - '12345:12345'
+    depends_on:
+      - loki
+
+  prometheus:
+    image: prom/prometheus:v3.13.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      # 1h retention. A laptop does not need more, and it keeps the container
+      # small. Production values are measured in weeks, and that number is what
+      # decides your disk budget.
+      - --storage.tsdb.retention.time=1h
+      # Lets you hot-reload the config with:
+      #   curl -X POST http://localhost:9090/-/reload
+      - --web.enable-lifecycle
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - api
+
+  # nginx's stub_status returns seven numbers in a format nobody else speaks.
+  # This tiny sidecar polls it and re-serves it as Prometheus text on :9113.
+  # Exporters are the standard answer for anything that predates Prometheus --
+  # there are hundreds of them, for postgres, redis, kafka, and your router.
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.5.1
+    command:
+      - --nginx.scrape-uri=http://nginx:8080/nginx_status
+    depends_on:
+      - nginx
+
+  grafana:
+    image: grafana/grafana:12.4.6
+    ports:
+      - '3000:3000'
+    environment:
+      # No login screen. Do not do this anywhere real.
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: 'true'
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - loki
+      - prometheus

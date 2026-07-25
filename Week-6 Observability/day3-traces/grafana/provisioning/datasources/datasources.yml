@@ -1,0 +1,57 @@
+# CHANGED SINCE DAY 2: Jaeger added, and Loki now has a "derived field" that
+# turns the trace_id inside a log line into a clickable link into Jaeger.
+#
+# That derived field is the whole point of today. Metrics tell you something is
+# slow, logs tell you which request, and the link takes you straight to where
+# the time went -- without you copying a hex string between two browser tabs.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      timeInterval: 5s
+
+  - name: Loki
+    type: loki
+    uid: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      maxLines: 1000
+
+      # ---------------------------------------------------------------------
+      # THE BRIDGE.
+      #
+      # Grafana runs this regex against every log line it renders. When it
+      # matches, it adds a button to the expanded log line that opens the
+      # captured group in another datasource.
+      #
+      # It works because app/src/logger.ts puts `trace_id` on every
+      # request-scoped log line. No shared database, no join -- just the same
+      # id written in two places by two systems that have never heard of each
+      # other. That is the entire mechanism.
+      #
+      # `$$` escapes the dollar sign: Grafana expands $VAR from the environment
+      # in provisioning files, and we want the literal ${__value.raw}, which is
+      # Grafana's own placeholder for the captured group.
+      # ---------------------------------------------------------------------
+      derivedFields:
+        - name: TraceID
+          matcherType: regex
+          matcherRegex: '"trace_id":"(\w+)"'
+          url: '$${__value.raw}'
+          urlDisplayLabel: 'View trace in Jaeger'
+          datasourceUid: jaeger
+
+  - name: Jaeger
+    type: jaeger
+    uid: jaeger
+    access: proxy
+    # Port 16686 is the QUERY/UI port. 4318 is where spans are RECEIVED.
+    # Pointing Grafana at 4318 is a classic ten-minute mistake.
+    url: http://jaeger:16686
