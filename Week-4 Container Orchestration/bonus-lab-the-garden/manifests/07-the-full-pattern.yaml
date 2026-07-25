@@ -1,0 +1,56 @@
+# ─────────────────────────────────────────────────────────────
+# PART 7 — The pattern you will actually deploy.
+#
+# A dedicated node pool needs all three levers working together:
+#
+#   1. taint       (on the node, applied in Part 7 by hand)
+#                  keeps ordinary workloads OUT
+#   2. toleration  (below) lets THIS workload in
+#   3. nodeAffinity (below) makes sure it actually GOES there
+#
+# Remove any one of the three and something quietly goes wrong.
+# You will prove that in the gauntlet.
+# ─────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-trainer
+  labels:
+    app: ml-trainer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ml-trainer
+  template:
+    metadata:
+      labels:
+        app: ml-trainer
+    spec:
+      tolerations:
+        - key: dedicated
+          operator: Equal
+          value: gpu
+          effect: NoSchedule
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: hardware
+                    operator: In
+                    values: [gpu]
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: ml-trainer
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: podinfo
+          image: stefanprodan/podinfo:6.14.0
+          resources:
+            requests: { cpu: 25m, memory: 32Mi }
+            limits: { cpu: 50m, memory: 64Mi }

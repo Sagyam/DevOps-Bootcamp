@@ -1,0 +1,48 @@
+# ─────────────────────────────────────────────────────────────
+# PART 4a — Hard affinity. "I will only land on marigold."
+#
+# This is the other half of the pair. The toleration gets the bee
+# PAST the spray; the affinity is what actually SENDS it there.
+# ─────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bees
+  labels:
+    app: bees
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: bees
+  template:
+    metadata:
+      labels:
+        app: bees
+    spec:
+      tolerations:
+        - key: spray
+          operator: Equal
+          value: mortein
+          effect: NoSchedule
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: flower
+                    operator: In
+                    values:
+                      - marigold
+      containers:
+        - name: podinfo
+          image: stefanprodan/podinfo:6.14.0
+          ports:
+            - containerPort: 9898
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi

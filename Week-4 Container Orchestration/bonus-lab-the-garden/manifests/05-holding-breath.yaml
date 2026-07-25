@@ -1,0 +1,63 @@
+# ─────────────────────────────────────────────────────────────
+# PART 5 — Holding your breath.
+#
+# Three Pods, three different lung capacities, all on the same node.
+# When the garden is fogged (NoExecute) you will watch them leave
+# in a very specific order. Have a stopwatch ready.
+#
+#   holder-none  — no toleration at all       → evicted immediately
+#   holder-60    — tolerationSeconds: 60      → evicted after ~60s
+#   holder-forever — no tolerationSeconds     → never evicted
+#
+# NOTE: bare Pods, not a Deployment. Nothing will recreate these,
+# which is the whole point — you want to watch them disappear.
+# ─────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Pod
+metadata:
+  name: holder-none
+  labels: { app: holders }
+spec:
+  nodeName: garden-m02          # pinned by hand so all three share a fate
+  containers:
+    - name: podinfo
+      image: stefanprodan/podinfo:6.14.0
+      resources:
+        requests: { cpu: 25m, memory: 32Mi }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: holder-60
+  labels: { app: holders }
+spec:
+  nodeName: garden-m02
+  tolerations:
+    - key: spray
+      operator: Equal
+      value: fog
+      effect: NoExecute
+      tolerationSeconds: 60      # "I can hold my breath for one minute"
+  containers:
+    - name: podinfo
+      image: stefanprodan/podinfo:6.14.0
+      resources:
+        requests: { cpu: 25m, memory: 32Mi }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: holder-forever
+  labels: { app: holders }
+spec:
+  nodeName: garden-m02
+  tolerations:
+    - key: spray
+      operator: Equal
+      value: fog
+      effect: NoExecute          # no tolerationSeconds = stays indefinitely
+  containers:
+    - name: podinfo
+      image: stefanprodan/podinfo:6.14.0
+      resources:
+        requests: { cpu: 25m, memory: 32Mi }

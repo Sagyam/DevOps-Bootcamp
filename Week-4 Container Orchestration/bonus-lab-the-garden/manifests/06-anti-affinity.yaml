@@ -1,0 +1,37 @@
+# ─────────────────────────────────────────────────────────────
+# PART 6 — Don't put every bee in one garden.
+#
+# Hard anti-affinity against our own label, one Pod per hostname.
+# Three replicas, three nodes: exactly one bee per garden.
+#
+# The labelSelector points at THIS SAME DEPLOYMENT'S label. That is
+# not a mistake — anti-affinity against yourself is how you spread.
+# ─────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spread-bees
+  labels:
+    app: spread-bees
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: spread-bees
+  template:
+    metadata:
+      labels:
+        app: spread-bees
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: spread-bees
+              topologyKey: kubernetes.io/hostname   # "the same garden" == "the same machine"
+      containers:
+        - name: podinfo
+          image: stefanprodan/podinfo:6.14.0
+          resources:
+            requests: { cpu: 25m, memory: 32Mi }

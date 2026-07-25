@@ -1,0 +1,41 @@
+# ─────────────────────────────────────────────────────────────
+# PART 3 — The bee puts on a mask.
+# Identical to 01 except for the tolerations block at the bottom.
+#
+# Read that block out loud before you apply it:
+#   "the spray called mortein, with effect NoSchedule, does not stop me."
+# It does NOT say "send me to the sprayed garden." Watch where these land.
+# ─────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bees
+  labels:
+    app: bees
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: bees
+  template:
+    metadata:
+      labels:
+        app: bees
+    spec:
+      tolerations:
+        - key: spray
+          operator: Equal
+          value: mortein
+          effect: NoSchedule
+      containers:
+        - name: podinfo
+          image: stefanprodan/podinfo:6.14.0
+          ports:
+            - containerPort: 9898
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi

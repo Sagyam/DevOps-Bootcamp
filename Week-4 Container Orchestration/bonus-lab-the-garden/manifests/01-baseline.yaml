@@ -1,0 +1,33 @@
+# ─────────────────────────────────────────────────────────────
+# PART 1 — Baseline. No rules at all.
+# Six bees, three gardens, nobody has an opinion about anything.
+# The scheduler will spread these by available room and nothing else.
+# ─────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bees
+  labels:
+    app: bees
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: bees
+  template:
+    metadata:
+      labels:
+        app: bees
+    spec:
+      containers:
+        - name: podinfo
+          image: stefanprodan/podinfo:6.14.0
+          ports:
+            - containerPort: 9898
+          resources:
+            requests:            
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
