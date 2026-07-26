@@ -12,6 +12,12 @@ spec:
     name: podinfo
   minReplicas: 2
   maxReplicas: 8
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 30
+     
   metrics:
     - type: Resource
       resource:
