@@ -105,7 +105,28 @@ aws ec2 authorize-security-group-ingress \
 > 1. The **Source** dropdown lets you pick "My IP" — in real life you'd lock SSH to your own IP instead of `0.0.0.0/0` (the whole internet).
 > 2. Rules can reference *other security groups* as a source — that's how you say "only my web servers may talk to my database."
 
-### A4. Launch the instance
+### A4. Find a subnet to launch into
+
+`run-instances` needs a **subnet** to place the instance's network interface in. Normally it'll pick a default subnet for you automatically — but in a shared bootcamp account, the default VPC's subnets are sometimes missing (deleted by a previous exercise, or never created), which gives you `MissingInput: No subnets found for the default VPC`. Look one up explicitly so it works either way:
+
+```bash
+export SUBNET_ID=$(aws ec2 describe-subnets \
+  --filters Name=default-for-az,Values=true \
+  --query 'Subnets[0].SubnetId' --output text)
+
+echo $SUBNET_ID
+```
+
+> ⚠️ If this prints `None`, your account's default VPC has no subnets at all and needs an admin to recreate them (`aws ec2 create-default-subnet --availability-zone us-east-1a`, once per AZ) — flag it to your instructor.
+
+Also grab your identity to tag resources with, instead of hardcoding a name:
+
+```bash
+export OWNER=$(aws sts get-caller-identity --query Arn --output text | awk -F/ '{print $NF}')
+echo $OWNER
+```
+
+### A5. Launch the instance
 
 We'll pass a **user data** script — a shell script that runs once at first boot. Ours installs nginx:
 
@@ -126,14 +147,15 @@ export INSTANCE_ID=$(aws ec2 run-instances \
   --instance-type t3.micro \
   --key-name bootcamp-key \
   --security-group-ids $SG_ID \
+  --subnet-id $SUBNET_ID \
   --user-data file://user-data.sh \
-  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=day1-web},{Key=owner,Value=YOURNAME}]' \
+  --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=day1-web},{Key=owner,Value=$OWNER}]" \
   --query 'Instances[0].InstanceId' --output text)
 
 echo $INSTANCE_ID
 ```
 
-✏️ **Replace `YOURNAME` with your actual name.** Tags are how humans (and billing reports) find things in a shared account.
+Tags are how humans (and billing reports) find things in a shared account — the `owner` tag is now filled in automatically from `$OWNER`, no manual editing needed.
 
 Wait until it's running and grab the public IP:
 
@@ -147,7 +169,7 @@ export PUBLIC_IP=$(aws ec2 describe-instances \
 echo $PUBLIC_IP
 ```
 
-### A5. Verify
+### A6. Verify
 
 Open `http://<PUBLIC_IP>` in your browser (give it ~1 minute — user-data runs *after* boot). You should see the nginx hello page.
 
@@ -178,7 +200,7 @@ exit
 > - **Actions → Instance settings → Edit user data** — user-data can be edited, but only while stopped
 > - **Connect → EC2 Instance Connect** — browser-based SSH without a `.pem` file. Handy when your key is on another machine.
 
-### A6. Instance lifecycle
+### A7. Instance lifecycle
 
 ```bash
 # Stop (billing for compute stops; the disk persists; PUBLIC IP CHANGES on restart!)
