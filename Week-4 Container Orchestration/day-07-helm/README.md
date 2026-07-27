@@ -80,14 +80,6 @@ Port-forward again: the UI is now **red** with the production message, 3 replica
 
 ---
 
-## Part 5 — Challenge (~15 min)
-
-1. Add a value `replicaCount` override on the CLI to run 5 api replicas *without* editing any file.
-2. Render (don't install) the chart with `ui.message` set to your name. Which command shows the result without deploying?
-3. In `templates/deployment.yaml`, what does `{{- include "shortlink.selectorLabels" . | nindent 6 }}` do, and why must selector labels **exclude** the chart version?
-   <details><summary>answer</summary>It injects the shared name/instance labels indented by 6 spaces. Selector labels must be stable — if the chart version were in the selector, every chart bump would change the selector and orphan the running pods, breaking upgrades.</details>
-
----
 
 ## Part 6 — Break-fix: debug a chart (~20 min)
 
