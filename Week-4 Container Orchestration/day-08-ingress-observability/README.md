@@ -46,6 +46,7 @@ Add both names to your hosts file, pointing at that IP:
 - **Windows:** open Notepad **as Administrator**, then open `C:\Windows\System32\drivers\etc\hosts`, add the line, save.
 - **macOS/Windows with the docker driver:** if `minikube ip` isn't directly reachable, run `minikube tunnel` in a separate terminal (leave it open) and use `127.0.0.1` in your hosts file instead.
 - Test resolution: `ping podinfo.local` should show your minikube IP (Ctrl-C to stop).
+- **`.local` + mDNS gotcha (mainly Linux, also possible on macOS):** `.local` is reserved for multicast DNS (Bonjour/Avahi). On Linux, if `/etc/nsswitch.conf`'s `hosts:` line has `mdns_minimal [NOTFOUND=return]` listed *before* `files`, lookups for `podinfo.local`/`whoami.local` get intercepted by mDNS first — since nothing replies, the query hangs until timeout and your `/etc/hosts` entry is never even checked. Symptom: `curl` hangs/times out instead of failing fast, and `getent hosts podinfo.local` returns nothing. Fix: reorder that line so `files` comes before `mdns_minimal`, e.g. `hosts: mymachines files mdns_minimal [NOTFOUND=return] resolve myhostname dns`. (macOS's Bonjour can theoretically do the same; Windows doesn't intercept `.local` this way by default.)
 
 </details>
 
