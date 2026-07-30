@@ -1,0 +1,63 @@
+name: publish-charts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "charts/**"
+      - ".github/workflows/publish-charts.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # The umbrella chart cannot resolve its dependencies until the leaf charts
+  # exist in the registry. Hence two jobs and a `needs:`.
+  leaves:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
+        with:
+          version: v3.16.3
+
+      - name: package and push leaf charts
+        run: |
+          set -euo pipefail
+          OWNER=${GITHUB_REPOSITORY_OWNER,,}
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+          mkdir -p /tmp/out
+          for c in charts/chiya-web charts/orders-api charts/kitchen-api charts/chiya-data; do
+            helm lint "$c"
+            helm package "$c" -d /tmp/out
+          done
+          for p in /tmp/out/*.tgz; do
+            echo "pushing $p"
+            helm push "$p" "oci://ghcr.io/$OWNER/charts"
+          done
+
+  umbrella:
+    needs: leaves
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
+        with:
+          version: v3.16.3
+
+      - name: package and push the umbrella chart
+        run: |
+          set -euo pipefail
+          OWNER=${GITHUB_REPOSITORY_OWNER,,}
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+          helm dependency update charts/chiya-stack
+          helm package charts/chiya-stack -d /tmp/out
+          helm push /tmp/out/chiya-stack-*.tgz "oci://ghcr.io/$OWNER/charts"
+
+      - name: reminder
+        run: |
+          echo "::warning::Each chart is its OWN GHCR package and each needs its visibility set to Public, separately."
