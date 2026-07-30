@@ -1,0 +1,49 @@
+global:
+  registry: ghcr.io
+  owner: REPLACE_ME
+  imageTag: latest
+
+replicaCount: 1
+
+image:
+  repository: ""
+  pullPolicy: IfNotPresent
+
+service:
+  port: 8080
+
+db:
+  host: chiya-db-rw.chiya-data.svc.cluster.local
+  secretName: chiya-db-app
+
+queue:
+  addr: valkey.chiya-data.svc.cluster.local:6379
+
+cookMs: 1200
+
+resources:
+  requests: { cpu: 100m, memory: 96Mi }
+  limits:   { cpu: 500m, memory: 256Mi }
+
+nodeSelector:
+  tier: app
+tolerations: []
+
+antiAffinity:
+  enabled: false
+  mode: preferred
+
+hpa:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPU: 60
+  scaleDownWindow: 60
+
+pdb:
+  enabled: false
+  minAvailable: 1
+
+# Set to false to break /fleet on purpose during the RBAC demo.
+rbac:
+  create: true

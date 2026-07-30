@@ -1,0 +1,44 @@
+# Traefik, configured entirely from values. Run
+#     helm show values traefik/traefik | wc -l
+# to see how many knobs exist. We set eight of them.
+
+service:
+  type: NodePort
+
+ports:
+  web:
+    nodePort: 30080
+    # Send every plain-HTTP request to HTTPS.
+    redirectTo:
+      port: websecure
+  websecure:
+    nodePort: 30443
+    tls:
+      enabled: true
+
+# Pin the gateway to the node whose ports we mapped.
+nodeSelector:
+  ingress-ready: "true"
+
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+
+# Access logs: one line, no code, no sidecar.
+logs:
+  general:
+    level: INFO
+  access:
+    enabled: true
+
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: false
+  kubernetesIngress:
+    enabled: true
+
+resources:
+  requests: { cpu: 50m, memory: 64Mi }
+  limits:   { memory: 192Mi }

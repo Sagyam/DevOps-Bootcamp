@@ -1,0 +1,44 @@
+# The data layer. Deliberately two different approaches side by side:
+#
+#   postgres -> a Cluster custom resource handed to an OPERATOR.
+#               Notice it does NOT produce a StatefulSet. CloudNativePG manages
+#               bare Pods and PVCs itself, because StatefulSet's ordinal rolling
+#               update is the wrong model for a database that needs
+#               switchover-then-restart ordering.
+#
+#   valkey   -> a StatefulSet we wrote by hand.
+#               Gives you stable identity and per-pod storage. Gives you nothing
+#               resembling clustering. That gap is why operators exist.
+
+postgres:
+  enabled: true
+  name: chiya-db
+  instances: 3
+  database: chiya
+  owner: chiya
+  storageSize: 1Gi
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+  nodeSelector:
+    tier: data
+  tolerations:
+    - key: tier
+      operator: Equal
+      value: data
+      effect: NoSchedule
+
+valkey:
+  enabled: true
+  replicas: 1
+  image: valkey/valkey:8-alpine
+  storageSize: 1Gi
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits:   { memory: 192Mi }
+  nodeSelector:
+    tier: data
+  tolerations:
+    - key: tier
+      operator: Equal
+      value: data
+      effect: NoSchedule

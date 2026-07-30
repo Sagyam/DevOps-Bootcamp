@@ -1,0 +1,44 @@
+{{- if .Values.rollupCron.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Chart.Name }}-rollup
+spec:
+  schedule: {{ .Values.rollupCron.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 600
+      template:
+        spec:
+          restartPolicy: OnFailure
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: rollup
+              image: {{ .Values.migration.image }}
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  psql "postgresql://$DB_USER:$DB_PASSWORD@$DB_HOST:5432/$DB_NAME?sslmode=require" \
+                    -c "SELECT flavour, count(*) AS cups, sum(qty) AS total
+                          FROM orders
+                         WHERE created_at > now() - interval '1 day'
+                      GROUP BY flavour ORDER BY cups DESC;"
+              env:
+                - name: DB_HOST
+                  value: {{ .Values.db.host | quote }}
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef: { name: {{ .Values.db.secretName }}, key: dbname }
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef: { name: {{ .Values.db.secretName }}, key: username }
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef: { name: {{ .Values.db.secretName }}, key: password }
+{{- end }}

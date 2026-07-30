@@ -1,0 +1,81 @@
+{{- if .Values.migration.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-migration-sql
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+data:
+  001_orders.sql: |
+    CREATE TABLE IF NOT EXISTS orders (
+      id         SERIAL PRIMARY KEY,
+      flavour    TEXT        NOT NULL,
+      qty        INT         NOT NULL DEFAULT 1,
+      status     TEXT        NOT NULL DEFAULT 'queued',
+      served_by  TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS orders_created_idx ON orders (created_at DESC);
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Chart.Name }}-migrate
+  annotations:
+    # This is the whole point of Helm hooks: schema changes land BEFORE the
+    # new pods that depend on them start rolling.
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 6
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}-migrate
+    spec:
+      restartPolicy: OnFailure
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: migrate
+          image: {{ .Values.migration.image }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "waiting for postgres at $DB_HOST ..."
+              until pg_isready -h "$DB_HOST" -p 5432 -U "$DB_USER" >/dev/null 2>&1; do
+                sleep 2
+              done
+              echo "applying migrations"
+              psql "postgresql://$DB_USER:$DB_PASSWORD@$DB_HOST:5432/$DB_NAME?sslmode=require" \
+                   -v ON_ERROR_STOP=1 -f /sql/001_orders.sql
+              echo "done"
+          env:
+
+            - name: DB_HOST
+              value: {{ .Values.db.host | quote }}
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef: { name: {{ .Values.db.secretName }}, key: dbname }
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef: { name: {{ .Values.db.secretName }}, key: username }
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: {{ .Values.db.secretName }}, key: password }
+          volumeMounts:
+            - name: sql
+              mountPath: /sql
+      volumes:
+        - name: sql
+          configMap:
+            name: {{ .Chart.Name }}-migration-sql
+{{- end }}

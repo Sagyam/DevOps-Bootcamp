@@ -1,0 +1,16 @@
+apiVersion: v2
+name: chiya-stack
+description: Umbrella chart -- the whole Chiya Shop application tier in one release
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+dependencies:
+  - name: chiya-web
+    version: "0.1.0"
+    repository: "oci://ghcr.io/REPLACE_ME/charts"
+  - name: orders-api
+    version: "0.1.0"
+    repository: "oci://ghcr.io/REPLACE_ME/charts"
+  - name: kitchen-api
+    version: "0.1.0"
+    repository: "oci://ghcr.io/REPLACE_ME/charts"

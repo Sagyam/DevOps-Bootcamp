@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chiya Shop</title>
+  <link rel="stylesheet" href="/style.css">
+  <!-- config.js is NOT baked into the image. It is mounted from a ConfigMap. -->
+  <script src="/config.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Chiya Shop</h1>
+    <p class="sub" id="shop-tagline">loading config...</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Place an order</h2>
+      <div class="row">
+        <select id="flavour">
+          <option>Masala chiya</option>
+          <option>Dudh chiya</option>
+          <option>Kalo chiya</option>
+          <option>Lemon tea</option>
+        </select>
+        <input id="qty" type="number" value="1" min="1" max="20">
+        <button id="order-btn">Order</button>
+      </div>
+      <p class="hint" id="order-status"></p>
+    </section>
+
+    <section class="card">
+      <h2>Kitchen load test</h2>
+      <p class="hint">Fires 40 concurrent /cook requests. Watch the HPA in k9s.</p>
+      <div class="row">
+        <button id="load-btn">Send load</button>
+        <span class="hint" id="load-status"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Orders</h2>
+      <table id="orders">
+        <thead><tr><th>#</th><th>Flavour</th><th>Qty</th><th>Status</th><th>Served by</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Fleet <span class="hint">(kitchen-api asks the Kubernetes API who its siblings are)</span></h2>
+      <pre id="fleet">...</pre>
+    </section>
+  </main>
+
+  <footer>
+    <span id="served-by">served by: ?</span>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

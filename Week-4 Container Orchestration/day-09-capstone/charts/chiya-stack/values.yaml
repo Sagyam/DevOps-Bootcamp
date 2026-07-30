@@ -1,0 +1,34 @@
+# Anything under `global` is visible to every subchart.
+global:
+  registry: ghcr.io
+  owner: REPLACE_ME
+  imageTag: latest
+
+# ---- the edge ---------------------------------------------------------------
+# Traefik itself is installed separately (it is cluster infrastructure).
+# These objects are the ROUTING POLICY, which belongs with the app.
+gateway:
+  enabled: true
+  entryPoint: websecure
+  tlsSecretName: chiya-tls
+
+  compression:
+    enabled: true
+
+  rateLimit:
+    enabled: false        # flip to true -> the API starts returning 429
+    average: 5
+    burst: 10
+
+  # Traefik OSS has no response cache. Kong and Apache APISIX do.
+  # That gap is a real architectural trade-off, not an oversight.
+
+# ---- subchart overrides -----------------------------------------------------
+chiya-web:
+  replicaCount: 1
+
+orders-api:
+  replicaCount: 1
+
+kitchen-api:
+  replicaCount: 1

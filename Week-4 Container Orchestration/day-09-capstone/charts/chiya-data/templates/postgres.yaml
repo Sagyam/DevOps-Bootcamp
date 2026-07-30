@@ -1,0 +1,43 @@
+{{- if .Values.postgres.enabled }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Values.postgres.name }}
+spec:
+  instances: {{ .Values.postgres.instances }}
+
+  # No imageName on purpose: let the operator pick the PostgreSQL image it was
+  # built and tested against. One less thing to get wrong.
+
+  storage:
+    size: {{ .Values.postgres.storageSize }}
+
+  bootstrap:
+    initdb:
+      database: {{ .Values.postgres.database }}
+      owner: {{ .Values.postgres.owner }}
+
+  # The operator generates a Secret called <name>-app containing
+  # username / password / dbname / host / port / uri. Nobody types a password.
+  enableSuperuserAccess: false
+
+  postgresql:
+    parameters:
+      max_connections: "60"
+      shared_buffers: "64MB"
+
+  resources:
+    {{- toYaml .Values.postgres.resources | nindent 4 }}
+
+  affinity:
+    enablePodAntiAffinity: true
+    podAntiAffinityType: preferred
+    {{- with .Values.postgres.nodeSelector }}
+    nodeSelector:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.postgres.tolerations }}
+    tolerations:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+{{- end }}

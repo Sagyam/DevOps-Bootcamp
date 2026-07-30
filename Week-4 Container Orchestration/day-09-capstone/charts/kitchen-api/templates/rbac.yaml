@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Chart.Name }}
+---
+{{- if .Values.rbac.create }}
+# The narrowest possible permission: read pods, in this namespace only.
+# Delete the RoleBinding below and GET /fleet starts returning 403.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Chart.Name }}-pod-reader
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Chart.Name }}-pod-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ .Chart.Name }}-pod-reader
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Chart.Name }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

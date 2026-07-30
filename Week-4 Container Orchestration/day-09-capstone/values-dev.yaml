@@ -1,0 +1,36 @@
+# Development topology: one of everything, no autoscaling, no protection.
+# Fits comfortably on a laptop.
+global:
+  registry: ghcr.io
+  owner: REPLACE_ME
+  imageTag: latest
+
+gateway:
+  enabled: true
+  compression:
+    enabled: false
+  rateLimit:
+    enabled: false
+
+chiya-web:
+  replicaCount: 1
+  antiAffinity:
+    enabled: false
+
+orders-api:
+  replicaCount: 1
+  antiAffinity:
+    enabled: false
+  hpa:
+    enabled: false
+  pdb:
+    enabled: false
+
+kitchen-api:
+  replicaCount: 1
+  antiAffinity:
+    enabled: false
+  hpa:
+    enabled: false
+  pdb:
+    enabled: false
