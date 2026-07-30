@@ -1,6 +1,18 @@
-# Traefik, configured entirely from values. Run
-#     helm show values traefik/traefik | wc -l
-# to see how many knobs exist. We set eight of them.
+# Traefik values.
+#
+# NOTE ON THE SCHEMA
+# ------------------
+# This chart ships a values.schema.json with additionalProperties: false, and it
+# has been tightened repeatedly. Keys that worked last year now hard-fail:
+#   ports.web.redirectTo      -> moved to ports.web.http.redirections.entryPoint
+#   ports.websecure.tls       -> removed; TLS belongs on the router (our IngressRoute)
+#
+# So this file deliberately sets only long-stable structural keys and expresses
+# everything else as `additionalArguments`, which is an unvalidated list of
+# Traefik CLI flags. Less elegant, far more durable.
+#
+# To see what YOUR chart version accepts:
+#   helm show values traefik/traefik > /tmp/tv.yaml
 
 service:
   type: NodePort
@@ -8,15 +20,10 @@ service:
 ports:
   web:
     nodePort: 30080
-    # Send every plain-HTTP request to HTTPS.
-    redirectTo:
-      port: websecure
   websecure:
     nodePort: 30443
-    tls:
-      enabled: true
 
-# Pin the gateway to the node whose ports we mapped.
+# Pin the gateway to the node whose ports we know.
 nodeSelector:
   ingress-ready: "true"
 
@@ -25,20 +32,20 @@ tolerations:
     operator: Exists
     effect: NoSchedule
 
-# Access logs: one line, no code, no sidecar.
-logs:
-  general:
-    level: INFO
-  access:
-    enabled: true
-
-providers:
-  kubernetesCRD:
-    enabled: true
-    allowCrossNamespace: false
-  kubernetesIngress:
-    enabled: true
+# Static configuration, as CLI flags. These have been stable for years.
+additionalArguments:
+  # send every plain-HTTP request to HTTPS
+  - "--entryPoints.web.http.redirections.entryPoint.to=websecure"
+  - "--entryPoints.web.http.redirections.entryPoint.scheme=https"
+  # make TLS the default for routers on the websecure entrypoint
+  - "--entryPoints.websecure.http.tls=true"
+  # access logs: one flag, no sidecar, no code
+  - "--accesslog=true"
+  - "--log.level=INFO"
 
 resources:
-  requests: { cpu: 50m, memory: 64Mi }
-  limits:   { memory: 192Mi }
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 192Mi
