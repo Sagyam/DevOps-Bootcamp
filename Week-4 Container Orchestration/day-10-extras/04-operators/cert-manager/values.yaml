@@ -1,0 +1,54 @@
+# helm repo add jetstack https://charts.jetstack.io
+# helm repo update
+# helm upgrade --install cert-manager jetstack/cert-manager \
+#   -n cert-manager --create-namespace -f 04-operators/cert-manager/values.yaml
+#
+# Read this file as: "how the OPERATOR itself is deployed".
+# It says nothing about certificates -- those are custom resources (issuer-and-cert.yaml).
+
+crds:
+  enabled: true    # install the CRDs with the chart (older charts called this `installCRDs`)
+  keep: true       # do NOT delete CRDs on `helm uninstall` -- deleting them deletes every Certificate
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+webhook:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+cainjector:
+  enabled: true
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# cert-manager can expose its own metrics as a ServiceMonitor.
+# Leave this false until kube-prometheus-stack is installed (it owns that CRD),
+# then flip it to true and `helm upgrade` -- a good demo of day-2 reconfiguration.
+prometheus:
+  enabled: false
+  servicemonitor:
+    enabled: false
+
+global:
+  leaderElection:
+    namespace: cert-manager

@@ -1,0 +1,31 @@
+# helm repo add cnpg https://cloudnative-pg.github.io/charts
+# helm repo update
+# helm upgrade --install cnpg cnpg/cloudnative-pg \
+#   -n cnpg-system --create-namespace -f 04-operators/cloudnative-pg/values.yaml
+#
+# One operator Pod. It does nothing until you create a `Cluster` custom resource.
+
+replicaCount: 1
+
+crds:
+  create: true
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 100Mi
+  limits:
+    cpu: 500m
+    memory: 300Mi
+
+config:
+  data:
+    # operator-wide defaults, applied to every Postgres Cluster it manages
+    INHERITED_ANNOTATIONS: "bootcamp.io/*"
+    INHERITED_LABELS: "team, env"
+
+monitoring:
+  # same story as cert-manager: needs the ServiceMonitor CRD to exist first
+  podMonitorEnabled: false
+  grafanaDashboard:
+    create: false

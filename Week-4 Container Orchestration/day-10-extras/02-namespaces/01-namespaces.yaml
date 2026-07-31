@@ -1,0 +1,20 @@
+# Two environments on one cluster. Labels are not decoration:
+# the Pod Security Admission labels below are enforced by the API server itself.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: chiya-dev
+  labels:
+    team: chiya-shop
+    env: dev
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: chiya-prod
+  labels:
+    team: chiya-shop
+    env: prod
+    pod-security.kubernetes.io/enforce: restricted

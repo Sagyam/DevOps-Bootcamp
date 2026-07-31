@@ -1,0 +1,26 @@
+# Deliberately broken. Watch the retry/backoff behaviour, then read the events.
+# With restartPolicy: Never, each retry creates a BRAND NEW Pod.
+# (With restartPolicy: OnFailure, the SAME Pod restarts instead -- try both.)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: burnt-chiya
+  namespace: jobs-lab
+spec:
+  backoffLimit: 3     # 1 initial attempt + 3 retries = 4 Pods
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: burn
+          image: busybox:1.36
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "too much heat..."
+              sleep 3
+              echo "burnt the milk" >&2
+              exit 1
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits:   { cpu: 100m, memory: 64Mi }

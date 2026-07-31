@@ -1,0 +1,13 @@
+# This one is ACCEPTED -- but not stored as written.
+# `cardamom` is not in the schema, so the API server silently PRUNES it.
+# Apply, then `kubectl get chiya spiced -n chiya-dev -o yaml` and hunt for cardamom.
+# This is the number one "my CR field disappeared" support ticket.
+apiVersion: chiyashop.dev/v1alpha1
+kind: Chiya
+metadata:
+  name: spiced
+  namespace: chiya-dev
+spec:
+  variety: masala
+  cardamom: true
+  ginger: "2 slices"

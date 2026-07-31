@@ -1,0 +1,31 @@
+# The smallest possible Job: run once, succeed, stop.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hello-chiya
+  namespace: jobs-lab
+spec:
+  # backoffLimit: how many times the Job controller re-creates a failed Pod
+  # before it gives up and marks the Job Failed. Default is 6.
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: hello-chiya
+    spec:
+      # THIS IS THE LINE PEOPLE FORGET.
+      # Pods default to restartPolicy: Always, which Jobs reject:
+      #   "spec.template.spec.restartPolicy: Unsupported value: Always"
+      restartPolicy: Never
+      containers:
+        - name: brew
+          image: busybox:1.36
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Boiling water..."
+              sleep 5
+              echo "Chiya is ready. Namaste!"
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits:   { cpu: 200m, memory: 64Mi }

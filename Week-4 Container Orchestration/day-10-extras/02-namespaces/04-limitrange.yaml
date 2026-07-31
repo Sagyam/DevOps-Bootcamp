@@ -1,0 +1,30 @@
+# LimitRange does two different jobs. Do not confuse it with ResourceQuota:
+#   ResourceQuota = ceiling for the WHOLE namespace (a budget)
+#   LimitRange    = rules for a SINGLE container/PVC (defaults + min/max)
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: chiya-limits
+  namespace: chiya-dev
+spec:
+  limits:
+    - type: Container
+      # injected when the container specifies nothing
+      default:
+        cpu: 200m
+        memory: 256Mi
+      defaultRequest:
+        cpu: 100m
+        memory: 128Mi
+      # hard bounds -- a container asking outside this range is REJECTED
+      max:
+        cpu: "1"
+        memory: 1Gi
+      min:
+        cpu: 20m
+        memory: 32Mi
+    - type: PersistentVolumeClaim
+      max:
+        storage: 2Gi
+      min:
+        storage: 100Mi

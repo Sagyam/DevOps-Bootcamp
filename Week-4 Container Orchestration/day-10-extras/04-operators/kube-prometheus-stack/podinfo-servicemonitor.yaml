@@ -1,0 +1,24 @@
+# A ServiceMonitor is the Prometheus Operator's custom resource for
+# "scrape this Service". You never edit prometheus.yml again -- the operator
+# renders it from every ServiceMonitor in the cluster and hot-reloads Prometheus.
+#
+# Requires chiya-web from 02-namespaces/07-app-right-size.yaml to be running.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: chiya-web
+  namespace: chiya-dev
+  labels:
+    release: kube-prometheus-stack   # harmless here; required if you did NOT set
+                                     # serviceMonitorSelectorNilUsesHelmValues: false
+spec:
+  selector:
+    matchLabels:
+      app: chiya-web                 # must match the SERVICE's labels, not the Pod's
+  namespaceSelector:
+    matchNames:
+      - chiya-dev
+  endpoints:
+    - port: http                     # the NAMED port on the Service
+      path: /metrics
+      interval: 15s

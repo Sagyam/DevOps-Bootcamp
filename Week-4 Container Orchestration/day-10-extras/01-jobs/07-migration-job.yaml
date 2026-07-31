@@ -1,0 +1,52 @@
+# The single most common real-world Job: a database migration.
+# Pattern worth memorising:
+#   initContainer waits for the dependency -> main container does the work exactly once.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migration
+  namespace: jobs-lab
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-db
+          image: postgres:16-alpine
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              until pg_isready -h chiya-db -U postgres; do
+                echo "db not ready yet, sleeping 2s"
+                sleep 2
+              done
+              echo "db is up"
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits:   { cpu: 100m, memory: 64Mi }
+      containers:
+        - name: migrate
+          image: postgres:16-alpine
+          env:
+            - name: PGPASSWORD
+              value: chiya123
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              echo "applying migration 001_create_orders..."
+              psql -h chiya-db -U postgres -d chiya <<'SQL'
+              CREATE TABLE IF NOT EXISTS orders (
+                id        SERIAL PRIMARY KEY,
+                variety   TEXT NOT NULL,
+                servings  INT  NOT NULL DEFAULT 1,
+                placed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+              );
+              INSERT INTO orders (variety, servings) VALUES ('masala', 2), ('black', 1);
+              SQL
+              echo "rows now in orders:"
+              psql -h chiya-db -U postgres -d chiya -c "SELECT count(*) FROM orders;"
+          resources:
+            requests: { cpu: 100m, memory: 64Mi }
+            limits:   { cpu: 300m, memory: 128Mi }

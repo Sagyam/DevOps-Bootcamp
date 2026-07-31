@@ -1,0 +1,8 @@
+# Everything in Part 1 lives here, so your `default` namespace stays clean.
+# (Part 2 explains what a Namespace actually *is* -- for now, treat it as a folder.)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jobs-lab
+  labels:
+    bootcamp.io/part: "01-jobs"

@@ -1,0 +1,22 @@
+# activeDeadlineSeconds is a HARD wall clock limit on the whole Job.
+# It beats backoffLimit: once the deadline passes, running Pods are killed
+# and the Job is marked Failed with reason=DeadlineExceeded.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: slow-kettle
+  namespace: jobs-lab
+spec:
+  activeDeadlineSeconds: 20
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 60
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: kettle
+          image: busybox:1.36
+          command: ["/bin/sh", "-c", "echo 'waiting for the kettle'; sleep 300"]
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits:   { cpu: 100m, memory: 64Mi }

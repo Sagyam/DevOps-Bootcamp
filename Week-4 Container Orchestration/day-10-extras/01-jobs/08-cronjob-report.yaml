@@ -1,0 +1,38 @@
+# A CronJob is a Job factory. It does not run anything itself --
+# on schedule it CREATES a Job, which creates a Pod.
+#   CronJob  ->  Job  ->  Pod
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hourly-sales-report
+  namespace: jobs-lab
+spec:
+  schedule: "*/1 * * * *"          # every minute, so the lab is not boring
+  timeZone: "Asia/Kathmandu"       # requires Kubernetes 1.27+. Without it, UTC.
+  concurrencyPolicy: Forbid        # Allow | Forbid | Replace
+  startingDeadlineSeconds: 30      # if the controller was down longer than this, skip the run
+  successfulJobsHistoryLimit: 3    # keep the last 3 successful Jobs for debugging
+  failedJobsHistoryLimit: 1
+  suspend: false                   # flip to true to pause without deleting
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 60
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: report
+              image: postgres:16-alpine
+              env:
+                - name: PGPASSWORD
+                  value: chiya123
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  echo "=== sales report $(date) ==="
+                  psql -h chiya-db -U postgres -d chiya \
+                    -c "SELECT variety, sum(servings) AS cups FROM orders GROUP BY variety;"
+              resources:
+                requests: { cpu: 50m, memory: 64Mi }
+                limits:   { cpu: 200m, memory: 128Mi }

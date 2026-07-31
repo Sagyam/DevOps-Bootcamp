@@ -1,0 +1,41 @@
+# A well-behaved workload: explicit, inside the LimitRange bounds,
+# and cheap enough that 2 replicas fit the namespace budget.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chiya-web
+  namespace: chiya-dev
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: chiya-web
+  template:
+    metadata:
+      labels:
+        app: chiya-web
+    spec:
+      containers:
+        - name: podinfo
+          image: ghcr.io/stefanprodan/podinfo:6.7.0
+          ports:
+            - name: http
+              containerPort: 9898
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits:   { cpu: 300m, memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chiya-web
+  namespace: chiya-dev
+  labels:
+    app: chiya-web
+spec:
+  selector:
+    app: chiya-web
+  ports:
+    - name: http
+      port: 9898
+      targetPort: http

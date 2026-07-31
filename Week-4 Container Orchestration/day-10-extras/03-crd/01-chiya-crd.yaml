@@ -1,0 +1,87 @@
+# A CustomResourceDefinition teaches the API server a new noun.
+# After this is applied, `kubectl get chiyas` works exactly like `kubectl get pods`:
+# same RBAC, same labels/annotations, same watch/edit/delete verbs, same k9s view.
+#
+# NAMING RULES (get one wrong and the API server rejects it):
+#   metadata.name MUST be <spec.names.plural>.<spec.group>
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: chiyas.chiyashop.dev
+spec:
+  group: chiyashop.dev
+  scope: Namespaced          # or Cluster, like a StorageClass or a Node
+  names:
+    kind: Chiya              # what you write in YAML
+    listKind: ChiyaList
+    plural: chiyas           # what you type in kubectl / k9s
+    singular: chiya
+    shortNames: [chy]        # `kubectl get chy`
+    categories: [chiyashop]  # `kubectl get chiyashop` returns every kind in the category
+  versions:
+    - name: v1alpha1
+      served: true           # is this version reachable over the API?
+      storage: true          # exactly ONE version may be the storage version
+      subresources:
+        status: {}           # splits spec (user intent) from status (controller truth)
+      additionalPrinterColumns:
+        - name: Variety
+          type: string
+          jsonPath: .spec.variety
+        - name: Sugar
+          type: integer
+          jsonPath: .spec.sugarSpoons
+        - name: Servings
+          type: integer
+          jsonPath: .spec.servings
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: [variety]
+              properties:
+                variety:
+                  type: string
+                  enum: [masala, black, green, lemon]
+                  description: Which chiya to brew.
+                sugarSpoons:
+                  type: integer
+                  minimum: 0
+                  maximum: 5
+                  default: 2
+                milk:
+                  type: boolean
+                  default: true
+                servings:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  default: 1
+                strength:
+                  type: string
+                  enum: [light, normal, kadak]
+                  default: normal
+              # CEL validation: cross-field rules that OpenAPI alone cannot express.
+              # Needs Kubernetes 1.25+ (GA in 1.29). Evaluated by the API server on write.
+              x-kubernetes-validations:
+                - rule: "self.variety != 'green' || self.milk == false"
+                  message: "green chiya is served without milk"
+                - rule: "self.strength != 'kadak' || self.servings <= 10"
+                  message: "kadak chiya is brewed in batches of 10 or fewer"
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                observedServings:
+                  type: integer
+                brewedAt:
+                  type: string

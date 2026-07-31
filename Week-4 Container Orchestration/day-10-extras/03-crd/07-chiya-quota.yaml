@@ -1,0 +1,11 @@
+# Part 2 meets Part 3: ResourceQuota can count YOUR custom resources too,
+# using the same count/<plural>.<group> syntax as built-in kinds.
+# Apply this, then try to create a 4th Chiya in chiya-dev.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: chiya-cr-quota
+  namespace: chiya-dev
+spec:
+  hard:
+    count/chiyas.chiyashop.dev: "3"

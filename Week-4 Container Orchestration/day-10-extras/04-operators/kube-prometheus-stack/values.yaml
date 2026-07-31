@@ -1,0 +1,84 @@
+# helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+# helm repo update
+# helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+#   -n monitoring --create-namespace -f 04-operators/kube-prometheus-stack/values.yaml
+#
+# This chart is really FOUR things: the Prometheus Operator, plus Prometheus,
+# Grafana and Alertmanager expressed as that operator's custom resources.
+# Everything below is trimmed to survive on a 4 CPU / 8 GB minikube.
+
+alertmanager:
+  enabled: false          # turn off to save ~200Mi; re-enable if you want to demo alert routing
+
+defaultRules:
+  create: false           # ~100 built-in alerting rules -- noisy for a lab
+
+grafana:
+  enabled: true
+  adminPassword: chiya123
+  persistence:
+    enabled: false        # dashboards are lost on restart; fine for a lab
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+  service:
+    type: ClusterIP       # we reach it with port-forward
+
+prometheus:
+  prometheusSpec:
+    retention: 2h
+    scrapeInterval: 30s
+    evaluationInterval: 30s
+
+    # ================== THE MOST IMPORTANT TWO LINES IN THIS FILE ==================
+    # By default the chart makes Prometheus pick up ONLY ServiceMonitors carrying
+    # the chart's own release label. Every "why is my ServiceMonitor ignored?"
+    # question on the internet is answered by these settings.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    # ==============================================================================
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 400Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+
+    # no PVC -- emptyDir, data dies with the Pod (acceptable for 2h retention)
+    storageSpec: {}
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+# minikube exposes these control-plane components differently than a real cluster;
+# leaving them on produces permanently red targets that confuse students.
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeProxy:
+  enabled: false

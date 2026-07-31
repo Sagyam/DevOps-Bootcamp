@@ -1,0 +1,31 @@
+# Three valid custom resources. Note how little you have to write --
+# the CRD's `default:` values fill in the rest server-side.
+apiVersion: chiyashop.dev/v1alpha1
+kind: Chiya
+metadata:
+  name: morning-masala
+  namespace: chiya-dev
+spec:
+  variety: masala
+  servings: 4
+  strength: kadak
+---
+apiVersion: chiyashop.dev/v1alpha1
+kind: Chiya
+metadata:
+  name: office-black
+  namespace: chiya-dev
+spec:
+  variety: black
+  sugarSpoons: 0
+  milk: false
+---
+apiVersion: chiyashop.dev/v1alpha1
+kind: Chiya
+metadata:
+  name: green-no-milk
+  namespace: chiya-dev
+spec:
+  variety: green
+  milk: false
+  sugarSpoons: 1

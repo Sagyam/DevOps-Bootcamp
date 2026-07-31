@@ -1,0 +1,40 @@
+# Every object here is rejected. Apply the file and read all four errors --
+# each one comes from a different validation mechanism.
+---
+# 1. enum violation (OpenAPI schema)
+apiVersion: chiyashop.dev/v1alpha1
+kind: Chiya
+metadata:
+  name: bad-coffee
+  namespace: chiya-dev
+spec:
+  variety: coffee
+---
+# 2. maximum violation (OpenAPI schema)
+apiVersion: chiyashop.dev/v1alpha1
+kind: Chiya
+metadata:
+  name: bad-sugar
+  namespace: chiya-dev
+spec:
+  variety: masala
+  sugarSpoons: 9
+---
+# 3. CEL rule violation (cross-field)
+apiVersion: chiyashop.dev/v1alpha1
+kind: Chiya
+metadata:
+  name: bad-green
+  namespace: chiya-dev
+spec:
+  variety: green
+  milk: true
+---
+# 4. required field missing
+apiVersion: chiyashop.dev/v1alpha1
+kind: Chiya
+metadata:
+  name: bad-empty
+  namespace: chiya-dev
+spec:
+  servings: 2

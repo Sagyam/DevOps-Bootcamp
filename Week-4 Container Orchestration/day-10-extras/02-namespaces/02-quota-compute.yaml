@@ -1,0 +1,18 @@
+# A compute ResourceQuota caps the SUM of requests/limits of all Pods in the namespace.
+#
+# THE RULE THAT SURPRISES EVERYONE:
+# once a namespace has a quota on requests.cpu / limits.memory / etc.,
+# every new Pod MUST declare that field, or the API server rejects it.
+# (LimitRange in 04-*.yaml is how you avoid making every dev type it out.)
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-quota
+  namespace: chiya-dev
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 1Gi
+    limits.cpu: "2"
+    limits.memory: 2Gi
+    pods: "10"

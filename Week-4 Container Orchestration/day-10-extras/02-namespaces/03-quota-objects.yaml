@@ -1,0 +1,18 @@
+# Quotas also cap object COUNTS, which is how you stop a runaway CI pipeline
+# from creating 4,000 Services. Syntax: count/<resource>.<apiGroup>
+# (core-group resources like services/pods have no group suffix)
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: object-quota
+  namespace: chiya-dev
+spec:
+  hard:
+    count/deployments.apps: "3"
+    count/jobs.batch: "5"
+    count/cronjobs.batch: "2"
+    services: "3"
+    services.loadbalancers: "0"     # nobody gets a LoadBalancer in dev
+    persistentvolumeclaims: "2"
+    configmaps: "10"
+    secrets: "10"

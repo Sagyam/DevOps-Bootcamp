@@ -1,0 +1,48 @@
+# THE payoff of this whole day. Compare with 01-jobs/06-chiya-db.yaml:
+# that was a Deployment you had to babysit. This is 25 lines that gets you
+# a primary, a replica, streaming replication, three Services
+# (-rw / -ro / -r), automatic failover, PVCs and a backup hook.
+#
+# You did not write a StatefulSet. The operator wrote it for you.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: chiya-db
+  labels:
+    team: chiya-shop
+    env: dev
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: chiya-pg
+  namespace: chiya-db
+spec:
+  instances: 2                 # 1 primary + 1 hot standby
+
+  storage:
+    size: 1Gi
+    # minikube's default StorageClass is "standard" (hostpath) -- fine for a lab.
+    # storageClass: standard
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  postgresql:
+    parameters:
+      max_connections: "50"
+      shared_buffers: "64MB"
+
+  bootstrap:
+    initdb:
+      database: chiya
+      owner: chiya            # operator generates the password Secret: chiya-pg-app
+
+  # how aggressively to promote a standby when the primary disappears
+  primaryUpdateStrategy: unsupervised
+  enableSuperuserAccess: true

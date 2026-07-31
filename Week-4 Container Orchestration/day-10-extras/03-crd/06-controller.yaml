@@ -1,0 +1,63 @@
+# The world's least sophisticated operator: a shell reconcile loop.
+# Real operators (kubebuilder / Operator SDK / Helm-based) are Go binaries with
+# informers, work queues and leader election -- but the SHAPE is identical:
+#
+#   loop forever:
+#     observed = read desired state from the API   (spec)
+#     make the world match it                      (create/update children)
+#     write back what actually happened            (status)
+#
+# Read the script. That loop is the whole idea behind every operator in Part 4.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chiya-controller
+  namespace: chiya-system
+  labels:
+    app: chiya-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chiya-controller
+  template:
+    metadata:
+      labels:
+        app: chiya-controller
+    spec:
+      serviceAccountName: chiya-controller
+      containers:
+        - name: controller
+          # any image with kubectl >= 1.24 works (needs --subresource support).
+          # alternatives: rancher/kubectl:v1.31.0
+          image: alpine/k8s:1.31.2
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "chiya-controller starting"
+              while true; do
+                kubectl get chiyas -A --no-headers \
+                  -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name,VARIETY:.spec.variety,SERVINGS:.spec.servings,STRENGTH:.spec.strength \
+                  2>/dev/null | while read -r ns name variety servings strength; do
+                    [ -z "$name" ] && continue
+
+                    # 1. reconcile the child object (here: a ConfigMap "recipe card")
+                    kubectl -n "$ns" create configmap "recipe-$name" \
+                      --from-literal=variety="$variety" \
+                      --from-literal=servings="$servings" \
+                      --from-literal=strength="$strength" \
+                      --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+
+                    # 2. report reality back on the status subresource
+                    kubectl -n "$ns" patch chiya "$name" \
+                      --subresource=status --type=merge \
+                      -p "{\"status\":{\"phase\":\"Brewed\",\"observedServings\":$servings,\"brewedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}" \
+                      >/dev/null
+
+                    echo "reconciled $ns/$name"
+                  done
+                sleep 5
+              done
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits:   { cpu: 200m, memory: 256Mi }

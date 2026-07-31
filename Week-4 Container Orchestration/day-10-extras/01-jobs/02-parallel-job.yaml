@@ -1,0 +1,29 @@
+# Work-queue style: 6 cups to brew, 2 stoves. The Job controller keeps
+# exactly `parallelism` Pods alive until `completions` of them have succeeded.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: brew-batch
+  namespace: jobs-lab
+spec:
+  completions: 6      # total successful Pods required
+  parallelism: 2      # how many run at the same time
+  backoffLimit: 3
+  # Delete the Job (and its Pods) 120s after it finishes. Without this,
+  # finished Jobs pile up in the cluster forever.
+  ttlSecondsAfterFinished: 60
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: brew
+          image: busybox:1.36
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "[$(hostname)] brewing..."
+              sleep 10
+              echo "[$(hostname)] done"
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits:   { cpu: 100m, memory: 64Mi }

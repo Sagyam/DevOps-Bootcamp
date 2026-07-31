@@ -1,0 +1,45 @@
+# A CRD on its own does nothing. It is a table in etcd with a schema.
+# To make it *mean* something you need a controller, and a controller needs
+# an identity (ServiceAccount) plus permissions (Role/ClusterRole + Binding).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: chiya-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: chiya-controller
+  namespace: chiya-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: chiya-controller
+rules:
+  # read the custom resources
+  - apiGroups: ["chiyashop.dev"]
+    resources: ["chiyas"]
+    verbs: ["get", "list", "watch"]
+  # write to the status subresource -- note the "/status" suffix,
+  # it is a SEPARATE RBAC resource from "chiyas"
+  - apiGroups: ["chiyashop.dev"]
+    resources: ["chiyas/status"]
+    verbs: ["get", "patch", "update"]
+  # the thing our controller actually creates on the user's behalf
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: chiya-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: chiya-controller
+subjects:
+  - kind: ServiceAccount
+    name: chiya-controller
+    namespace: chiya-system
