@@ -1,6 +1,0 @@
-apiVersion: v2
-name: kitchen-api
-description: Chiya Shop worker -- Valkey consumer, CPU-burn endpoint, RBAC demo
-type: application
-version: 0.1.0
-appVersion: "1.0.0"

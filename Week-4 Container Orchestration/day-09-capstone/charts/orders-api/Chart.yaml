@@ -1,6 +1,0 @@
-apiVersion: v2
-name: orders-api
-description: Chiya Shop write path -- Go API backed by CloudNativePG and Valkey
-type: application
-version: 0.1.0
-appVersion: "1.0.0"
