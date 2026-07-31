@@ -77,23 +77,6 @@ hey                  # load generator; a curl fallback is provided
 | 8 GB | `NODES=2 MEM=2200 ./platform/bootstrap.sh` | 2 nodes, taint demo still works |
 | 8 GB, struggling | also set `postgres.instances=2` in stage 3 | |
 
-### Bandwidth — read this
-
-You will pull roughly **900 MB** of container images. If twenty of you do that
-simultaneously on campus wifi, the day is over before it starts.
-
-**Run this at home, the night before:**
-
-```bash
-./platform/prepull.sh pull
-./platform/bootstrap.sh          # pulls the operator + Postgres images too
-minikube -p chiya stop           # keeps everything cached
-```
-
-Then in class you just `minikube -p chiya start` and you are already warm.
-
----
-
 ## Stage 0 — the cluster
 
 The platform layer is not your application. An app team should never have to install an
