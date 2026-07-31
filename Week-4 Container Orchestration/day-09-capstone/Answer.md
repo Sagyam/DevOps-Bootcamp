@@ -9,9 +9,8 @@
 | 1 | Push this repo to a public GitHub repo of your own and let **both** workflows go green | Students clone something known-good. If CI is broken at 09:30 you lose the morning. |
 | 2 | Flip all **eight** GHCR packages to public (3 images + 5 charts) | Private-by-default is the single biggest time sink in this lab. |
 | 3 | Run `./platform/bootstrap.sh` and the full stage-3 install yourself, timed | You will find exactly one broken thing. Better tonight. |
-| 4 | Send students `./platform/prepull.sh pull` as homework tonight | ~900 MB each. Twenty laptops on campus wifi is 18 GB serialised. |
-| 5 | Consider a pull-through cache registry on the classroom LAN | Best mitigation by far if you have 30 minutes to set one up. |
-| 6 | Keep your own working cluster running on a spare machine | Your fallback demo when a student is 40 minutes behind. |
+| 4 | Consider a pull-through cache registry on the classroom LAN | Best mitigation by far if you have 30 minutes to set one up. |
+| 5 | Keep your own working cluster running on a spare machine | Your fallback demo when a student is 40 minutes behind. |
 
 ---
 
