@@ -1,4 +1,4 @@
-# Day 5 — DynamoDB & Aurora: Two Databases, Two Philosophies
+# Day 4 — DynamoDB & Aurora: Two Databases, Two Philosophies
 
 > **Today you will:** build a NoSQL table in DynamoDB (keys, queries, indexes, TTL) and a real relational cluster in Aurora Serverless v2 (MySQL-compatible), connect to both, and understand *when to reach for which*.
 

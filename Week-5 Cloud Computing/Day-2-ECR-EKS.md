@@ -1,4 +1,4 @@
-# Day 3 — ECR & EKS: Your Containers Move Into AWS
+# Day 2 — ECR & EKS: Your Containers Move Into AWS
 
 > **Today you will:** push an image to your own private registry (ECR), stand up a managed Kubernetes cluster (EKS), and deploy our old friend **podinfo** behind a real cloud load balancer. Everything you learned in the Kubernetes module, now on rented hardware.
 

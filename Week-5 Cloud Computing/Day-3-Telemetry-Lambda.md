@@ -1,4 +1,4 @@
-# Day 4 — Telemetry & Lambda: Watching Everything, Serving Without Servers
+# Day 3 — Telemetry & Lambda: Watching Everything, Serving Without Servers
 
 > **Today you will:** read metrics, build an alarm that emails you when CPU spikes, ship logs to CloudWatch, find out *who did what* with CloudTrail — then deploy code with **no server at all**: a Lambda function with a public URL, plus an S3-triggered Lambda that reacts to uploads.
 
