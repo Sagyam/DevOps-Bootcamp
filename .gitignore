@@ -8,4 +8,5 @@
 sagyam-key
 tmp/
 *.log
+.claude
 .vagrant/
