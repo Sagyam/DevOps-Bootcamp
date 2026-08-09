@@ -1,0 +1,91 @@
+# Managed by Ansible -- template: chiya.conf.j2
+
+# ---------------------------------------------------------------------------
+# Server 1: plain HTTP. Its only job is to upgrade you to HTTPS.
+# ---------------------------------------------------------------------------
+server {
+    listen 80;
+    listen [::]:80;
+    server_name _;
+
+    return 301 https://$host$request_uri;
+}
+
+# ---------------------------------------------------------------------------
+# Server 2: HTTPS -- three protocols on one port number.
+#
+#   listen 443 ssl;         -> TCP: serves HTTP/1.1 and (with http2 on) HTTP/2
+#   listen 443 quic;        -> UDP: serves HTTP/3
+#   Alt-Svc header          -> tells clients "h3 is available on UDP 443"
+#
+# GRACEFUL FALLBACK, explained:
+# A browser ALWAYS connects over TCP first (h1.1 or h2). Only after it sees
+# the Alt-Svc header does it try QUIC on the next request -- and if UDP is
+# blocked anywhere on the path, it silently stays on TCP. Fallback is not
+# something we configure; it is how Alt-Svc discovery works by design.
+# (Note: browsers ignore Alt-Svc from untrusted certs, so with our
+# self-signed cert, browsers will demo the fallback and curl will demo h3.)
+# ---------------------------------------------------------------------------
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    listen 443 quic reuseport;
+    listen [::]:443 quic reuseport;
+
+    http2 on;
+
+    server_name _;
+
+    ssl_certificate     {{ cert_dir }}/chiya.crt;
+    ssl_certificate_key {{ cert_dir }}/chiya.key;
+
+    # QUIC requires TLS 1.3 -- h3 will not negotiate without it
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    # Advertise HTTP/3 for the next 24h of requests
+    add_header Alt-Svc 'h3=":443"; ma=86400' always;
+
+    # So pages can show which protocol served them
+    add_header X-Protocol $server_protocol always;
+
+    root  {{ web_root }};
+    index index.html;
+
+    # ------------------ error pages ------------------
+    error_page 401 /401.html;
+    error_page 403 /403.html;
+    error_page 404 /404.html;
+    error_page 500 502 503 504 /50x.html;
+
+    location = /401.html { internal; }
+    location = /403.html { internal; }
+    location = /404.html { internal; }
+    location = /50x.html { internal; }
+
+    # ------------------ routes ------------------
+    location / {
+        try_files $uri $uri/ =404;   # anything unknown -> 404 page
+    }
+
+    location /about {
+        try_files /about.html =404;
+    }
+
+    location /menu {
+        try_files /menu.html =404;
+    }
+
+    # Demo routes that trigger the status-code pages on purpose
+    location /vault {
+        return 401;                  # authentication required
+    }
+
+    location /admin {
+        deny all;                    # nginx returns 403 for denied
+    }
+
+    location /teapot {
+        default_type text/plain;
+        return 418 "418 I'm a teapot. But this is a chiya shop, so... close enough.\n";
+    }
+}

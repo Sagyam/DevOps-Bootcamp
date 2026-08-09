@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Himalayan Chiya Shop</title><link rel="stylesheet" href="/_style.css">
+</head>
+<body>
+  <main class="card">
+    <span class="badge">provisioned by terraform · configured by ansible</span>
+    <h1>🍵 Himalayan Chiya Shop</h1>
+    <p>If you can read this, the whole pipeline worked: Terraform built the VPC, subnet,
+       gateway, firewall rules, and this EC2 instance — then handed the IP to Ansible,
+       which installed nginx and served you this page over TLS.</p>
+    <p id="proto">Checking protocol…</p>
+    <nav>
+      <a href="/about">About</a>
+      <a href="/menu">Menu</a>
+      <a href="/vault">Vault (401)</a>
+      <a href="/admin">Admin (403)</a>
+      <a href="/does-not-exist">Mystery (404)</a>
+      <a href="/teapot">Teapot (418)</a>
+    </nav>
+  </main>
+  <script>
+    const p = performance.getEntriesByType("navigation")[0]?.nextHopProtocol || "unknown";
+    document.getElementById("proto").innerHTML =
+      "This page was delivered over <strong>" + p + "</strong>" +
+      (p === "h3" ? " — QUIC is working! 🚀" : " — TCP fallback (expected in browsers with a self-signed cert).");
+  </script>
+</body>
+</html>
