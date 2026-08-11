@@ -7,5 +7,5 @@ variable "shop_name" {
 variable "students" {
   description = "Students who get their own welcome file"
   type        = set(string)
-  default     = ["asha", "bibek", "chandra"]
+  default     = ["janak", "bibek", "kajol"]
 }
