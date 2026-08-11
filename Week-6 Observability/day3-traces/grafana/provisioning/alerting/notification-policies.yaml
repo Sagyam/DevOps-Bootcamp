@@ -1,0 +1,21 @@
+# The routing tree: every alert with no more specific match goes to the
+# Resend contact point. One receiver, one rule group, so there is nothing to
+# split by label here -- a real deployment would route by `severity` or
+# `team` to different contact points instead.
+apiVersion: 1
+
+policies:
+  - orgId: 1
+    receiver: resend-email
+    group_by: ['alertname']
+    # Wait this long after the first alert in a group before sending, in
+    # case related alerts (e.g. latency + event loop lag from the same
+    # BLEND_ITERATIONS bump) fire together and can go in one email.
+    group_wait: 30s
+    # How long to wait before adding newly-fired alerts to an
+    # already-notified group.
+    group_interval: 5m
+    # How long a still-firing alert waits before it re-sends. Short here
+    # on purpose -- this is a classroom demo, not production, and 5
+    # minutes means students see the resend without a long wait.
+    repeat_interval: 5m

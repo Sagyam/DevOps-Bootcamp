@@ -220,6 +220,30 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: 'true'
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
       GF_AUTH_DISABLE_LOGIN_FORM: 'true'
+      # -----------------------------------------------------------------
+      # ALERTING -- SMTP via Resend (https://resend.com).
+      #
+      # Resend answers on the standard SMTP port with your API key AS the
+      # password -- there is no separate "SMTP password" to generate. This
+      # is core Grafana config (grafana.ini's [smtp] section), which is why
+      # it lives here as env vars rather than in an alerting provisioning
+      # file: it is provider plumbing, not an alerting *resource*.
+      #
+      # RESEND_API_KEY comes from a .env file next to this compose file
+      # (see .env.example) so the key never ends up committed. Left unset,
+      # SMTP stays enabled but every send fails auth -- loudly, in
+      # Grafana's own logs -- until you fill it in.
+      GF_SMTP_ENABLED: 'true'
+      GF_SMTP_HOST: 'smtp.resend.com:587'
+      GF_SMTP_USER: 'resend'
+      GF_SMTP_PASSWORD: '${RESEND_API_KEY:-}'
+      # onboarding@resend.dev needs no domain verification, which is why it
+      # is the default here -- but Resend restricts it to sending only to
+      # the email address your Resend account was signed up with. Verify
+      # your own domain and override ALERT_FROM_ADDRESS in .env to lift
+      # that restriction.
+      GF_SMTP_FROM_ADDRESS: '${ALERT_FROM_ADDRESS:-onboarding@resend.dev}'
+      GF_SMTP_FROM_NAME: 'Chiya Shop Alerts'
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro

@@ -1,0 +1,259 @@
+# ---------------------------------------------------------------------------
+# Five alert rules, one per knob this lab already has.
+# ---------------------------------------------------------------------------
+#
+# Every threshold below sits well above what the DEFAULT docker-compose.yml
+# settings produce. Run `docker compose up` and none of these should fire --
+# that is deliberate, so a class can watch the dashboards be quiet, then
+# watch you turn one knob and get an email. Each rule's `description`
+# annotation says exactly which knob and how far to turn it.
+#
+# Why these five and not, say, low tea stock: chiya_tea_stock for the scarce
+# tea legitimately bounces near zero under NORMAL load (restock() tops it up
+# to 3 every 60s, loadgen drains it continuously) -- an alert on it would fire
+# constantly and teach "alerts are noise", the opposite of the point.
+# Everything below stays quiet unless you make it not quiet.
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: chiya-demo-alerts
+    folder: 'Chiya Shop'
+    interval: 30s
+    rules:
+      # ---------------------------------------------------------------
+      # 1. Error rate. Baseline: PAYMENT_FAILURE_RATE=0.04 and only orders
+      #    (~21% of traffic) can 503, so the baseline 5xx share of ALL
+      #    traffic is under 1%. 20% is a >20x margin above that noise.
+      #
+      #    TRIGGER: in docker-compose.yml set the api service's
+      #    PAYMENT_FAILURE_RATE to '0.9', then `docker compose up -d api`.
+      # ---------------------------------------------------------------
+      - uid: chiya-high-error-rate
+        title: Chiya API - high 5xx error rate
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              range: false
+              expr: >-
+                100 * sum(rate(chiya_http_requests_total{job="chiya-api", status=~"5.."}[1m]))
+                /
+                sum(rate(chiya_http_requests_total{job="chiya-api"}[1m]))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [20] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last, params: [] }
+                  type: query
+        for: 1m
+        noDataState: NoData
+        execErrState: Alerting
+        labels:
+          severity: critical
+        annotations:
+          summary: '5xx error rate is {{ $values.A.Value | printf "%.1f" }}% of all chiya-api traffic (threshold 20%)'
+          description: >-
+            Demo trigger: set PAYMENT_FAILURE_RATE to '0.9' on the api
+            service in docker-compose.yml, then `docker compose up -d api`.
+            Put it back to '0.04' afterwards.
+
+      # ---------------------------------------------------------------
+      # 2. Latency on the deliberately slow route. Baseline p95 is
+      #    ~200-250ms per the Day 3 README. 800ms is a comfortable margin.
+      #
+      #    TRIGGER: exercise 4.1.A -- set BLEND_ITERATIONS to '40000000' on
+      #    the api service, `docker compose up -d api`. (Fires alert #3
+      #    alongside this one -- same root cause, two symptoms, which is
+      #    itself worth pointing out to students.)
+      # ---------------------------------------------------------------
+      - uid: chiya-pairings-latency-high
+        title: Chiya API - pairings route p95 latency high
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              range: false
+              expr: >-
+                histogram_quantile(0.95, sum by (le) (rate(chiya_http_request_duration_seconds_bucket{job="chiya-api", route="/teas/:id/pairings"}[1m])))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [0.8] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last, params: [] }
+                  type: query
+        for: 1m
+        noDataState: NoData
+        execErrState: Alerting
+        labels:
+          severity: warning
+        annotations:
+          summary: 'p95 latency of GET /teas/:id/pairings is {{ $values.A.Value | printf "%.2f" }}s (threshold 0.8s)'
+          description: >-
+            Demo trigger: set BLEND_ITERATIONS to '40000000' on the api
+            service in docker-compose.yml, then `docker compose up -d api`.
+            Put it back to '4000000' afterwards.
+
+      # ---------------------------------------------------------------
+      # 3. Event loop lag -- the "this is BLOCKING, not waiting" evidence
+      #    from Part 3 of the README. Baseline is near-zero; 4M sqrt/sin
+      #    iterations at low traffic weight rarely sustains p99 > 300ms.
+      #
+      #    TRIGGER: same knob as #2 (BLEND_ITERATIONS='40000000'). This
+      #    rule is what proves it's blocking rather than waiting -- the
+      #    1200ms-supplier-sleep variant of exercise 4.1.B should NOT
+      #    move this one, only the latency alert above.
+      # ---------------------------------------------------------------
+      - uid: chiya-event-loop-blocked
+        title: Chiya API - event loop lag high (blocking, not waiting)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              range: false
+              expr: 'max(nodejs_eventloop_lag_p99_seconds{job="chiya-api"})'
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [0.3] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last, params: [] }
+                  type: query
+        for: 1m
+        noDataState: NoData
+        execErrState: Alerting
+        labels:
+          severity: warning
+        annotations:
+          summary: 'Event loop lag p99 is {{ $values.A.Value | printf "%.2f" }}s (threshold 0.3s) -- something is blocking the thread'
+          description: >-
+            Demo trigger: set BLEND_ITERATIONS to '40000000' on the api
+            service in docker-compose.yml, then `docker compose up -d api`.
+            Put it back to '4000000' afterwards.
+
+      # ---------------------------------------------------------------
+      # 4. A replica going away. This is the one infra-shaped alert in the
+      #    set -- everything else above is application-shaped.
+      #
+      #    Deliberately NOT `up{job="chiya-api"} == 0`. The api target list
+      #    comes from dns_sd_configs (see prometheus/prometheus.yml), so a
+      #    killed container's IP drops out of Docker's DNS and Prometheus's
+      #    NEXT service-discovery refresh removes that target entirely --
+      #    it does not sit at up=0 for long enough to be a dependable
+      #    signal. Counting live targets survives that: 2 replicas expected,
+      #    so anything under 2 means one is gone, however it left.
+      #
+      #    TRIGGER: kill one of the two api containers --
+      #      docker kill $(docker compose ps -q api | head -n1)
+      #    docker compose will NOT restart it automatically (no restart
+      #    policy is set on api), so this stays down until you run
+      #    `docker compose up -d api` again to bring the replica back.
+      # ---------------------------------------------------------------
+      - uid: chiya-api-instance-down
+        title: Chiya API - a replica is down
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 120, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              range: false
+              expr: 'count(up{job="chiya-api"})'
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [2] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last, params: [] }
+                  type: query
+        for: 30s
+        noDataState: NoData
+        execErrState: Alerting
+        labels:
+          severity: critical
+        annotations:
+          summary: 'Only {{ $values.A.Value | printf "%.0f" }} of 2 expected chiya-api replicas are being scraped'
+          description: >-
+            Demo trigger: docker kill $(docker compose ps -q api | head -n1)
+            Recover with: docker compose up -d api
+
+      # ---------------------------------------------------------------
+      # 5. Traffic spike. Baseline is RPS=5 in docker-compose.yml, so
+      #    system-wide request rate sits around 5 req/s. 30 req/s is a 6x
+      #    margin -- the one alert triggered directly through the load
+      #    generator, matching its literal job in this stack.
+      #
+      #    TRIGGER: set RPS to '60' on the loadgen service in
+      #    docker-compose.yml, then `docker compose up -d loadgen`.
+      # ---------------------------------------------------------------
+      - uid: chiya-traffic-spike
+        title: Chiya API - request rate spike
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              range: false
+              expr: 'sum(rate(chiya_http_requests_total{job="chiya-api"}[1m]))'
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [30] }
+                  operator: { type: and }
+                  query: { params: [A] }
+                  reducer: { type: last, params: [] }
+                  type: query
+        for: 1m
+        noDataState: NoData
+        execErrState: Alerting
+        labels:
+          severity: warning
+        annotations:
+          summary: 'chiya-api is handling {{ $values.A.Value | printf "%.1f" }} req/s (threshold 30)'
+          description: >-
+            Demo trigger: set RPS to '60' on the loadgen service in
+            docker-compose.yml, then `docker compose up -d loadgen`. Put it
+            back to '5' afterwards.

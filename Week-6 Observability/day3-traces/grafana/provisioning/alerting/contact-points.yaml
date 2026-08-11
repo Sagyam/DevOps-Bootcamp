@@ -1,0 +1,26 @@
+# Where alert notifications go. Paired with contact-points.yaml's SMTP
+# settings on the grafana service in docker-compose.yml -- that config gets
+# Grafana able to SEND email at all; this file says WHO receives it.
+#
+# The destination address is a plain placeholder rather than an env var.
+# Grafana's provisioning system does expand ${VARS} for datasources and
+# dashboards, but doing the same inside alerting resources (contact points,
+# specifically) has a history of not expanding reliably across versions --
+# see grafana/grafana#56437 and #54984. A hardcoded field you edit once is
+# less clever and more certain to actually work.
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: resend-email
+    receivers:
+      - uid: chiya-resend-email
+        type: email
+        disableResolveMessage: false
+        settings:
+          # <<< EDIT THIS. Put the inbox that should receive alert emails. >>>
+          # If you're using the default onboarding@resend.dev sender (see
+          # docker-compose.yml), Resend only allows delivery to the address
+          # your Resend account itself was signed up with -- use that one.
+          addresses: CHANGE_ME@example.com
+          singleEmail: true

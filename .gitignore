@@ -10,3 +10,7 @@ tmp/
 *.log
 .claude
 .vagrant/
+
+# Secrets loaded via docker compose's .env (e.g. Resend API keys)
+.env
+!.env.example

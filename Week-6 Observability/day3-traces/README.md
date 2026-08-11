@@ -329,6 +329,36 @@ Then answer: from the trace, can you tell how much of an order's time is the tra
 
 ---
 
+## Part 5 — Alerting: turning a dashboard into an email
+
+Everything so far waits for a human to look at a screen. Alerting is Grafana watching the same Prometheus queries for you and paging you when they cross a line.
+
+### One-time setup
+
+1. `cp .env.example .env` and fill in `RESEND_API_KEY` (Resend dashboard → API Keys). Leave `ALERT_FROM_ADDRESS` blank to send from `onboarding@resend.dev` — no domain verification needed, but Resend will only deliver to the address your Resend account was signed up with.
+2. Open `grafana/provisioning/alerting/contact-points.yaml` and replace `CHANGE_ME@example.com` with that same address. (Not an env var — see the comment in that file for why.)
+3. `docker compose up -d grafana`
+
+Grafana → **Alerting → Contact points** should show `resend-email` as provisioned. **Alerting → Alert rules**, folder *Chiya Shop*, should show five rules — all green/normal, because none of them should fire under the default load.
+
+### The five alerts
+
+Each one is quiet at the settings this lab starts with, and each has an exact knob to turn — read the `description` field on the firing alert, or `grafana/provisioning/alerting/rules.yaml`, for the command.
+
+| Alert | Watches | Turn this knob |
+|---|---|---|
+| High 5xx error rate | 5xx share of all traffic > 20% | `PAYMENT_FAILURE_RATE: '0.9'` on `api` |
+| Pairings p95 latency high | p95 of `/teas/:id/pairings` > 800ms | `BLEND_ITERATIONS: '40000000'` on `api` (exercise 4.1.A) |
+| Event loop lag high | `nodejs_eventloop_lag_p99_seconds` > 0.3s | same knob as above — proves it's *blocking*, not waiting |
+| A replica is down | `up{job="chiya-api"}` for any instance | `docker kill $(docker compose ps -q api \| head -n1)` |
+| Request rate spike | total req/s > 30 | `RPS: '60'` on `loadgen` |
+
+Pick one, edit `docker-compose.yml`, `docker compose up -d <service>`, and watch the rule go from green to pending (the `for:` duration) to firing in the Grafana UI — then check the inbox. Put the setting back afterwards; nothing auto-reverts.
+
+Worth pointing out to a class: the latency alert and the event-loop alert share one root cause (`BLEND_ITERATIONS`) and fire together, while the 1200ms-supplier-sleep variant from exercise 4.1.B moves latency but **not** event loop lag — the same blocking-vs-waiting distinction from Part 3, now visible as two different alerts instead of two panels.
+
+---
+
 ## Checks for understanding
 
 1. What does a trace tell you that a metric cannot, and vice versa?
