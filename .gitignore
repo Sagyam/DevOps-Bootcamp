@@ -14,3 +14,7 @@ tmp/
 # Secrets loaded via docker compose's .env (e.g. Resend API keys)
 .env
 !.env.example
+# Terraform state files
+*.tfstate
+
+
