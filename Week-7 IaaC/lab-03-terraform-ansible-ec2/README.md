@@ -37,14 +37,18 @@ it's attached to is stopped or gone.
 ```bash
 cd terraform
 terraform init
-terraform plan     # read it! ~12 resources; find the UDP 443 ingress rule and ask yourself why it exists
-terraform apply
+terraform plan -var="student_name=<your-name>"     # read it! ~12 resources; find the UDP 443 ingress rule and ask yourself why it exists
+terraform apply -var="student_name=<your-name>"
 ```
+
+`student_name` is required — this AWS account is shared by the whole cohort, and it
+prefixes every resource name (and stamps an `Owner` tag) so nothing collides between
+students and everything is identifiable in the console.
 
 Optional but recommended — lock SSH to your own IP:
 
 ```bash
-terraform apply -var="ssh_ingress_cidr=$(curl -s ifconfig.me)/32"
+terraform apply -var="student_name=<your-name>" -var="ssh_ingress_cidr=$(curl -s ifconfig.me)/32"
 ```
 
 When it finishes, look at what Terraform wrote **locally**:

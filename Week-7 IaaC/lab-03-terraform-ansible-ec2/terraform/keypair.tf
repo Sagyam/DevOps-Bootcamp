@@ -9,7 +9,7 @@ resource "tls_private_key" "lab" {
 }
 
 resource "aws_key_pair" "lab" {
-  key_name   = "tf-ansible-lab-key"
+  key_name   = "${local.name_prefix}-key"
   public_key = tls_private_key.lab.public_key_openssh
 }
 

@@ -15,7 +15,7 @@ resource "aws_vpc" "lab" {
   enable_dns_support   = true
   enable_dns_hostnames = true # required for the instance to get a public DNS name
 
-  tags = { Name = "tf-ansible-lab-vpc" }
+  tags = { Name = "${local.name_prefix}-vpc" }
 }
 
 resource "aws_subnet" "public" {
@@ -24,13 +24,13 @@ resource "aws_subnet" "public" {
   availability_zone       = "${var.region}a"
   map_public_ip_on_launch = true
 
-  tags = { Name = "tf-ansible-lab-public-a" }
+  tags = { Name = "${local.name_prefix}-public-a" }
 }
 
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.lab.id
 
-  tags = { Name = "tf-ansible-lab-igw" }
+  tags = { Name = "${local.name_prefix}-igw" }
 }
 
 resource "aws_route_table" "public" {
@@ -41,7 +41,7 @@ resource "aws_route_table" "public" {
     gateway_id = aws_internet_gateway.igw.id
   }
 
-  tags = { Name = "tf-ansible-lab-public-rt" }
+  tags = { Name = "${local.name_prefix}-public-rt" }
 }
 
 resource "aws_route_table_association" "public" {

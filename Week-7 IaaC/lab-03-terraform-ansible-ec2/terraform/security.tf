@@ -5,7 +5,7 @@
 # ---------------------------------------------------------------------------
 
 resource "aws_security_group" "web" {
-  name        = "tf-ansible-lab-web"
+  name        = "${local.name_prefix}-web"
   description = "SSH for Ansible, HTTP/HTTPS for the world"
   vpc_id      = aws_vpc.lab.id
 
@@ -49,5 +49,5 @@ resource "aws_security_group" "web" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "tf-ansible-lab-web" }
+  tags = { Name = "${local.name_prefix}-web" }
 }

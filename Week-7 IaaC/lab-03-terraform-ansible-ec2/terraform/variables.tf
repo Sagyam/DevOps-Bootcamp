@@ -1,3 +1,18 @@
+variable "student_name" {
+  description = <<-EOT
+    Your name (or handle), used as a prefix on every resource this lab creates.
+    Required: this AWS account is shared across the whole cohort, and without a
+    per-student prefix, resources like the key pair collide the moment a second
+    student runs apply. Pass e.g. -var='student_name=sagyam'.
+  EOT
+  type        = string
+
+  validation {
+    condition     = can(regex("^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$", var.student_name))
+    error_message = "student_name must be lowercase alphanumeric with optional hyphens (1-32 chars), e.g. 'sagyam' or 'sagyam-t'."
+  }
+}
+
 variable "region" {
   description = "AWS region"
   type        = string

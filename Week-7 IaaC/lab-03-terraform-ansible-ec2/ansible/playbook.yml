@@ -156,7 +156,7 @@
         src: templates/chiya.conf.j2
         dest: /etc/nginx/conf.d/chiya.conf
         mode: "0644"
-        validate: "/bin/sh -c 'nginx -t -c /etc/nginx/nginx.conf'"
+        validate: "/bin/sh -c 'cp %s /etc/nginx/conf.d/chiya.conf && nginx -t -c /etc/nginx/nginx.conf'"
       notify: Reload nginx
 
     # -------------------------------------------------------------------

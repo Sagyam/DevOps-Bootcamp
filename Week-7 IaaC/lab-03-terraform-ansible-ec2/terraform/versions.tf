@@ -24,6 +24,7 @@ provider "aws" {
     tags = {
       Project   = "tf-ansible-lab"
       ManagedBy = "terraform"
+      Owner     = var.student_name
     }
   }
 }

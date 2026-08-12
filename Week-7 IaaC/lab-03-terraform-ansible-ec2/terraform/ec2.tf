@@ -27,7 +27,7 @@ resource "aws_instance" "web" {
     volume_type = "gp3"
   }
 
-  tags = { Name = "tf-ansible-lab-web" }
+  tags = { Name = "${local.name_prefix}-web" }
 }
 
 # An Elastic IP survives instance stop/start; the auto-assigned public IP
@@ -35,7 +35,7 @@ resource "aws_instance" "web" {
 resource "aws_eip" "web" {
   domain = "vpc"
 
-  tags = { Name = "tf-ansible-lab-eip" }
+  tags = { Name = "${local.name_prefix}-eip" }
 }
 
 resource "aws_eip_association" "web" {
