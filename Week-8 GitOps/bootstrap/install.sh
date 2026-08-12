@@ -39,12 +39,18 @@ helm upgrade --install argocd argo/argo-cd \
 
 # ---------------------------------------------------------------------------
 # 3. Flagger -- the control loop for progressive delivery.
-#    CRDs are applied explicitly. Helm will not upgrade CRDs that already
-#    exist, so making this a separate, visible step saves you a confusing
-#    failure six months from now.
+#    Helm will not upgrade CRDs that already exist, so on subsequent runs
+#    (chart version bumps) they need to be applied explicitly. On a true
+#    first install, though, skip this: Helm creates and owns the CRDs itself
+#    when the release doesn't exist yet, and if we pre-apply them with
+#    kubectl first, Helm's own server-side apply conflicts with the
+#    "kubectl" field manager and the install fails.
 # ---------------------------------------------------------------------------
-echo "==> Installing Flagger CRDs"
-kubectl apply -f https://raw.githubusercontent.com/fluxcd/flagger/main/artifacts/flagger/crd.yaml
+if helm status flagger --namespace ingress-nginx >/dev/null 2>&1; then
+  echo "==> Updating Flagger CRDs (release already exists)"
+  kubectl apply --server-side --force-conflicts \
+    -f https://raw.githubusercontent.com/fluxcd/flagger/main/artifacts/flagger/crd.yaml
+fi
 
 echo "==> Installing Flagger"
 helm upgrade --install flagger flagger/flagger \

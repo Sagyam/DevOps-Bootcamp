@@ -17,9 +17,9 @@ spec:
   project: default
 
   source:
-    repoURL: https://github.com/CHANGE-ME/gitops-lab.git   # <-- YOUR repo
+    repoURL: https://github.com/Sagyam/DevOps-Bootcamp.git
     targetRevision: main
-    path: apps/podinfo
+    path: Week-8 GitOps/apps/podinfo
 
   destination:
     server: https://kubernetes.default.svc
