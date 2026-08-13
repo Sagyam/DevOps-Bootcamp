@@ -19,7 +19,7 @@ spec:
   source:
     repoURL: https://github.com/Sagyam/DevOps-Bootcamp.git
     targetRevision: main
-    path: Week-8 GitOps/apps/podinfo
+    path: apps/podinfo
 
   destination:
     server: https://kubernetes.default.svc
