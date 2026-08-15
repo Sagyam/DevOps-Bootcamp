@@ -12,10 +12,9 @@ The cluster takes ~15 minutes to build. Start it **now** and we will talk
 theory while AWS works.
 
 ```bash
-git clone https://github.com/<you>/gitops-lab.git
-cd gitops-lab/terraform
+git clone https://github.com/sagyam/gitops-lab.git
+cd terraform
 
-cp terraform.tfvars.example terraform.tfvars
 $EDITOR terraform.tfvars          # set student_handle to YOUR handle
 
 terraform init
