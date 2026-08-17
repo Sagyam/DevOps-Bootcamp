@@ -1,4 +1,4 @@
-# 🚀 DevOps & Platform Engineering Bootcamp
+# DevOps & Platform Engineering Bootcamp
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](LICENSE)
 [![Linux](https://img.shields.io/badge/Linux-Kernel%20%7C%20CLI%20%7C%20Systemd-FCC624?logo=linux&logoColor=black)](#week-1-linux-for-devops--system-internals--terminal-fluency)
@@ -9,46 +9,71 @@
 [![Observability](https://img.shields.io/badge/Observability-Prometheus%20%7C%20Grafana%20%7C%20Loki%20%7C%20Jaeger-F46800?logo=grafana&logoColor=white)](#week-6-observability--the-three-pillars-of-observability)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions%20%7C%20Jenkins-2088FF?logo=githubactions&logoColor=white)](#week-3-cicd-pipelines--automated-testing-security--continuous-delivery)
 
-A comprehensive, production-grade, 9-week hands-on DevOps & Platform Engineering curriculum. Designed from the ground up to take practitioners from fundamental Linux systems administration to advanced progressive delivery, infrastructure as code, cloud architectures, full-stack observability, and production disaster recovery audits.
+A comprehensive, production-grade, 9-week hands-on DevOps & Platform Engineering curriculum. Designed to take practitioners from fundamental Linux systems administration to advanced progressive delivery, infrastructure as code, cloud architectures, full-stack observability, and production disaster recovery audits.
 
 ---
 
-## 🧭 Core Philosophy & Pedagogy
+## Core Philosophy & Pedagogy
 
 1. **Apply, Observe, Break, and Fix:**
-   Every module is built around hands-on interaction. Instead of theoretical hello-worlds, you interact with live systems, analyze failure modes, diagnose breaking changes in real time, and implement production-ready fixes.
+   Every module is built around hands-on interaction. Instead of theoretical exercises, learners interact with live systems, analyze failure modes, diagnose breaking changes in real time, and implement production-ready fixes.
 2. **K9s as the Cockpit, kubectl as the Mirror:**
-   Interactive terminal UIs (like K9s, Lazydocker, and Lazygit) allow you to visualize cluster and container state immediately, while mirroring every action with CLI commands for automation scripts and headless pipelines.
+   Interactive terminal UIs (K9s, Lazydocker, and Lazygit) provide immediate cluster and container visibility, with every action mirrored in CLI commands for automation scripts and headless pipelines.
 3. **Continuity & Real-World Stacks:**
    Applications like **ShortLink** (multi-tier microservices with Go, Python, Node, Redis, and Postgres) and **The Chiya Shop** (observable microservice) travel across modules—from containerization in Docker, to orchestration in Kubernetes, to continuous delivery with GitHub Actions and GitOps.
 4. **Nightmare vs. Pristine Reference Architectures:**
-   Learn not only what good looks like, but how real-world legacy codebases fail. Audit 80+ planted defects and architectural anti-patterns in the Capstone before delivering hardened, observable, and resilient infrastructure.
+   Learn not only standard designs, but also how real-world legacy codebases fail. Audit 80+ planted defects and architectural anti-patterns in the Capstone before deploying hardened, observable, and resilient infrastructure.
 
 ---
 
-## 🗺️ 9-Week Curriculum Roadmap
+## Curriculum Progression Architecture
 
-```
-DevOps Bootcamp
-├── 🛠️  Onboarding        ── Automated Workstation Setup & DevOps Landscape
-├── 🐧  Week 1: Linux     ── System Internals, Text Processing, Vim, Systemd & Cron
-├── 🐳  Week 2: Docker    ── Containers, Multi-Stage Builds, Networks, Volumes & Compose
-├── 🔄  Week 3: CI/CD     ── GitHub Actions, Secret Management, Runners & Jenkins
-├── ☸️   Week 4: K8s       ── Pods, Deployments, Services, Storage, Helm, Ingress & K9s
-├── ☁️   Week 5: AWS       ── IAM, VPC Networking, EC2, S3, RDS & Cloud Architecture
-├── 🔭  Week 6: Observe   ── Logs (Loki), Metrics (Prometheus), Traces (OpenTelemetry/Jaeger)
-├── 🏗️   Week 7: IaaC      ── Terraform Provider Mastery, State, Minikube & AWS + Ansible
-├── ⚡  Week 8: GitOps    ── Argo CD & Flagger Progressive Canary Delivery on EKS
-└── 🏆  Week 9: Capstone  ── The Tiffin Audit Lab: 83 Defects, Security, DR Drills & SRE
+```mermaid
+flowchart TD
+    subgraph Phase1 ["Phase 1: Systems & Packaging"]
+        direction LR
+        W0["Onboarding<br/>Environment Setup"] --> W1["Week 1: Linux<br/>Internals & CLI"] --> W2["Week 2: Docker<br/>Containers & Storage"]
+    end
+
+    subgraph Phase2 ["Phase 2: Automation & Orchestration"]
+        direction LR
+        W3["Week 3: CI/CD<br/>GitHub Actions & Jenkins"] --> W4["Week 4: Kubernetes<br/>Cluster Orchestration"] --> W5["Week 5: AWS<br/>Cloud Architecture"]
+    end
+
+    subgraph Phase3 ["Phase 3: Operations & Delivery"]
+        direction LR
+        W6["Week 6: Observability<br/>Logs, Metrics, Traces"] --> W7["Week 7: Terraform<br/>Infrastructure as Code"] --> W8["Week 8: GitOps<br/>Argo CD & Flagger"]
+    end
+
+    subgraph Phase4 ["Phase 4: SRE & Production Capstone"]
+        direction LR
+        W9["Week 9: Capstone<br/>83-Defect Audit & DR Drills"]
+    end
+
+    Phase1 --> Phase2 --> Phase3 --> Phase4
 ```
 
 ---
 
-## 📚 Module-by-Module Breakdown
+## Module Breakdown
+
+```
+DevOps Bootcamp Directory Structure
+├── Onboarding/                    Automated workstation setup & DevOps landscape
+├── Week-1 Linux for DevOps/       System internals, text processing, Vim, systemd & cron
+├── Week-2 Docker/                 Containers, multi-stage builds, networks, volumes & compose
+├── Week-3 CI and CD/              GitHub Actions, secret management, runners & Jenkins
+├── Week-4 Container Orchestration/ Pods, deployments, services, storage, Helm, Ingress & K9s
+├── Week-5 Cloud Computing/        IAM, VPC networking, EC2, S3, RDS & cloud architecture
+├── Week-6 Observability/          Logs (Loki), metrics (Prometheus), traces (OpenTelemetry/Jaeger)
+├── Week-7 IaaC/                   Terraform provider reconciliation, state, Minikube & AWS + Ansible
+├── Week-8 GitOps/                 Argo CD & Flagger progressive canary delivery on EKS
+└── Week-9 Capstone Project/       The Tiffin Audit Lab: 83 defects, security, DR drills & SRE
+```
 
 ### [Onboarding](./Onboarding/) — *DevOps Landscape & Workstation Setup*
-- **DevOps Culture & Tooling Landscape:** Overview of modern platform engineering, CI/CD cycles, feedback loops, and SRE principles.
-- **Automated Workstation Setup:** Comprehensive bootstrap script ([`bootcamp-setup.sh`](./Onboarding/bootcamp-setup.sh)) supporting Debian/Ubuntu, Fedora/RHEL, Arch/Manjaro, and openSUSE.
+- **DevOps Landscape:** Overview of modern platform engineering, CI/CD cycles, feedback loops, and SRE principles.
+- **Automated Workstation Setup:** Bootstrap script ([`bootcamp-setup.sh`](./Onboarding/bootcamp-setup.sh)) supporting Debian/Ubuntu, Fedora/RHEL, Arch/Manjaro, and openSUSE.
 - **Toolchain:** Docker, Minikube, kubectl, K9s, Helm, Terraform, Ansible, AWS CLI, Lazydocker, Lazygit, bat, eza, btop, jq, and yq.
 - **Slides:** [`DevOps_Day1_Landscape.pdf`](./Onboarding/DevOps_Day1_Landscape.pdf)
 
@@ -56,18 +81,18 @@ DevOps Bootcamp
 
 ### [Week 1: Linux for DevOps](./Week-1%20Linux%20for%20DevOps/) — *System Internals & Terminal Fluency*
 - **Filesystem Hierarchy & Navigation:** Deep dive into `/etc`, `/var`, `/proc`, `/sys`, permissions (`chmod`, `chown`, octal & symbolic modes, SUID/SGID).
-- **Text Processing & Log Analysis:** Practical drills on [`text-processing/`](./Week-1%20Linux%20for%20DevOps/text-processing/) using `grep`, `awk`, `sed`, `cut`, `sort`, `uniq`, and `jq` to parse access logs, JSON payloads, and service configurations.
+- **Text Processing & Log Analysis:** Hands-on drills in [`text-processing/`](./Week-1%20Linux%20for%20DevOps/text-processing/) using `grep`, `awk`, `sed`, `cut`, `sort`, `uniq`, and `jq` to parse access logs, JSON payloads, and service configurations.
 - **Vim Mastery:** Navigation, modal editing, macro execution, and configuration challenges ([`vim/`](./Week-1%20Linux%20for%20DevOps/vim/)).
 - **Service Management & Automation:** `systemd` units, `journalctl` debugging, and cron scheduling workflows.
 - **Interactive Simulations:** [`orbit-linux/`](./Week-1%20Linux%20for%20DevOps/orbit-linux/) live terminal challenges.
-- **Cheatsheet & Slides:** [`Linux Cheatsheet.md`](./Week-1%20Linux%20for%20DevOps/Linux%20Cheatsheet.md) & [`Linux_for_DevOps.pdf`](./Week-1%20Linux%20for%20DevOps/Linux_for_DevOps.pdf).
+- **Reference Materials:** [`Linux Cheatsheet.md`](./Week-1%20Linux%20for%20DevOps/Linux%20Cheatsheet.md) & [`Linux_for_DevOps.pdf`](./Week-1%20Linux%20for%20DevOps/Linux_for_DevOps.pdf).
 
 ---
 
 ### [Week 2: Docker & Containers](./Week-2%20Docker/) — *Packaging, Isolation & Local Orchestration*
-- **10-Part Modular Lessons ([`lessons/`](./Week-2%20Docker/lessons/)):**
+- **10-Part Modular Curriculum ([`lessons/`](./Week-2%20Docker/lessons/)):**
   1. CLI commands and container lifecycle
-  2. Dockerfile fundamentals & caching mechanics
+  2. Dockerfile fundamentals and caching mechanics
   3. Advanced instructions (`ENTRYPOINT` vs `CMD`, `COPY` vs `ADD`, `ARG` vs `ENV`)
   4. Best practices (multi-stage builds, non-root users, minimal base images)
   5. Container networking (bridge, host, overlay, internal DNS resolution)
@@ -76,7 +101,7 @@ DevOps Bootcamp
   8. Multi-container orchestration with Docker Compose
   9. Containerized CI/CD pipelines
   10. Clustering and service replication with Docker Swarm
-- **Real-World Application ([`shortlink/`](./Week-2%20Docker/shortlink/)):** A multi-tier URL shortener service featuring an API backend, Web frontend, Redis cache, PostgreSQL storage, asynchronous click analytics worker, health checks, and Swarm stack deployments.
+- **Reference Application ([`shortlink/`](./Week-2%20Docker/shortlink/)):** Multi-tier URL shortener service featuring an API backend, Web frontend, Redis cache, PostgreSQL storage, asynchronous click analytics worker, health checks, and Swarm stack deployments.
 - **Slides:** [`Docker_and_Containers.pdf`](./Week-2%20Docker/Docker_and_Containers.pdf).
 
 ---
@@ -96,7 +121,7 @@ DevOps Bootcamp
 ---
 
 ### [Week 4: Container Orchestration (Kubernetes)](./Week-4%20Container%20Orchestration/) — *Cluster Architecture & Operations*
-- **10-Day Hands-on Blueprint ([`kubernetes-lab-blueprint.md`](./Week-4%20Container%20Orchestration/kubernetes-lab-blueprint.md)):**
+- **10-Day Blueprint ([`kubernetes-lab-blueprint.md`](./Week-4%20Container%20Orchestration/kubernetes-lab-blueprint.md)):**
   - **Day 1:** Control plane architecture, Pod lifecycle, and manifest anatomy.
   - **Day 2:** Deployments, ReplicaSets, zero-downtime rolling updates, and rollbacks.
   - **Day 3:** Networking, ClusterIP, NodePort, LoadBalancer, and CoreDNS service discovery.
@@ -122,7 +147,7 @@ DevOps Bootcamp
 ---
 
 ### [Week 6: Observability](./Week-6%20Observability/) — *The Three Pillars of Observability*
-- **The Chiya Shop Lab ([`README.md`](./Week-6%20Observability/README.md)):** An end-to-end telemetry lab using a tea shop microservice to explore real-world system behavior:
+- **The Chiya Shop Lab ([`README.md`](./Week-6%20Observability/README.md)):** Telemetry lab using a tea shop microservice to explore real-world system behavior:
   - **Day 1 — Logs:** Centralized log aggregation with Grafana Loki, Alloy / Promtail collectors, and LogQL queries for real-time error tracing.
   - **Day 2 — Metrics:** Prometheus scraping, metric types (Counters, Gauges, Histograms), PromQL alerting rules, NGINX exporters, and Grafana dashboard design.
   - **Day 3 — Distributed Tracing:** Instrumenting applications with OpenTelemetry (OTel), Jaeger collector/UI, context propagation, and analyzing service latency bottlenecks.
@@ -131,7 +156,7 @@ DevOps Bootcamp
 ---
 
 ### [Week 7: Infrastructure as Code (Terraform)](./Week-7%20IaaC/) — *Declarative Cloud & Configuration Automation*
-- **Universal Reconciliation (`init` → `plan` → `apply` → `destroy`):**
+- **Universal Reconciliation Workflow (`init` → `plan` → `apply` → `destroy`):**
   - **Lab 1 — Local Files & Fundamentals:** Terraform state engine, drift detection, variables, outputs, `templatefile`, and `for_each` meta-arguments ([`lab-01-local-files/`](./Week-7%20IaaC/lab-01-local-files/)).
   - **Lab 2 — Kubernetes Provider:** Managing Minikube / Kubernetes API resources declaratively using Terraform state reconciliation ([`lab-02-minikube/`](./Week-7%20IaaC/lab-02-minikube/)).
   - **Lab 3 — AWS + Ansible Hybrid Automation:** Provisioning VPC, Subnets, Internet Gateways, and EC2 instances via Terraform, feeding outputs dynamically into Ansible playbooks for automated server configuration ([`lab-03-terraform-ansible-ec2/`](./Week-7%20IaaC/lab-03-terraform-ansible-ec2/)).
@@ -142,7 +167,7 @@ DevOps Bootcamp
 ### [Week 8: GitOps & Progressive Delivery](./Week-8%20GitOps/) — *Argo CD & Flagger on Kubernetes*
 - **Declarative GitOps Engine:** Argo CD installation, Application CRDs, App-of-Apps pattern, automated synchronization, self-healing, and drift correction ([`LAB.md`](./Week-8%20GitOps/LAB.md)).
 - **Progressive Canary Deployments:** Flagger controller integration with NGINX Ingress and Prometheus metrics for automated Canary releases, traffic shifting, metric analysis, and instant automated rollbacks on error thresholds.
-- **Deployment Strategies:** Deep dive into Recreate, Rolling Update, Blue-Green, Canary, and A/B Testing ([`strategies/README.md`](./Week-8%20GitOps/strategies/README.md)).
+- **Deployment Strategies:** Comparison of Recreate, Rolling Update, Blue-Green, Canary, and A/B Testing ([`strategies/README.md`](./Week-8%20GitOps/strategies/README.md)).
 - **Guides:** [`INSTRUCTOR.md`](./Week-8%20GitOps/docs/INSTRUCTOR.md) & [`TROUBLESHOOTING.md`](./Week-8%20GitOps/docs/TROUBLESHOOTING.md).
 
 ---
@@ -154,12 +179,40 @@ DevOps Bootcamp
 - **Disaster Recovery Drills:** Live simulation of database drop and point-in-time recovery (PITR) ([`RUNBOOK-dr-drill.md`](./Week-9%20Capstone%20Project/tiffin-pristine/docs/RUNBOOK-dr-drill.md)).
 - **Audit Matrix:** Detailed 83-defect remediation ledger ([`IMPROVEMENTS.md`](./Week-9%20Capstone%20Project/IMPROVEMENTS.md)).
 
+```mermaid
+graph LR
+    subgraph Traffic ["Traffic Ingress"]
+        Client([Client Traffic]) --> Ingress[NGINX Ingress]
+        Ingress --> Flagger[Flagger Canary Router]
+    end
+
+    subgraph ServiceMesh ["Workloads"]
+        Flagger --> PodsPrimary[Primary Pods]
+        Flagger -. Canary Split .-> PodsCanary[Canary Pods]
+        PodsPrimary --> API[Tiffin REST API]
+    end
+
+    subgraph Persistence ["Data Layer"]
+        API --> Redis[(Redis Cache)]
+        API --> Postgres[(PostgreSQL Primary)]
+        Postgres --> WAL[(WAL Backup / PITR)]
+    end
+
+    subgraph Telemetry ["Observability & GitOps"]
+        Prometheus[Prometheus] -. Metric Analysis .-> Flagger
+        Loki[Grafana Loki] -. Log Streams .-> PodsPrimary
+        Jaeger[Jaeger / OTel] -. Traces .-> API
+        ArgoCD[Argo CD] ==>|Declarative GitOps| Traffic
+        ArgoCD ==>|Declarative GitOps| ServiceMesh
+    end
+```
+
 ---
 
-## ⚡ Quickstart & Workstation Setup
+## Quickstart & Workstation Setup
 
 ### 1. Automated Setup Script
-Run the workstation bootstrap script to install the entire bootcamp toolchain automatically:
+Run the workstation bootstrap script to install the bootcamp toolchain:
 
 ```bash
 # Clone the repository
@@ -180,16 +233,16 @@ chmod +x Onboarding/bootcamp-setup.sh
 ```
 
 ### 2. Manual Prerequisites Check
-If setting up manually, verify your workstation has:
-- **OS:** Linux (Ubuntu 22.04+, Debian 12+, Fedora 39+, Arch) or macOS with Docker Desktop / Colima / OrbStack.
+If setting up manually, verify your workstation meets the following baseline:
+- **Operating System:** Linux (Ubuntu 22.04+, Debian 12+, Fedora 39+, Arch) or macOS with Docker Desktop / Colima / OrbStack.
 - **Hardware:** Minimum 4 CPU cores, 8 GB RAM (16 GB recommended), 30 GB free disk space.
-- **Core CLI Tools:** `git`, `docker` (with Compose v2), `kubectl`, `minikube`, `helm`, `k9s`, `terraform` (>= 1.5), `aws-cli` (v2), `jq`, `yq`, and `curl`.
+- **CLI Toolchain:** `git`, `docker` (with Compose v2), `kubectl`, `minikube`, `helm`, `k9s`, `terraform` (>= 1.5), `aws-cli` (v2), `jq`, `yq`, and `curl`.
 
 ---
 
-## 🧰 Technology & Tooling Matrix
+## Technology & Tooling Matrix
 
-| Category | Primary Technologies & Tools |
+| Domain | Primary Technologies & Tools |
 |---|---|
 | **Operating Systems & CLI** | Linux (Ubuntu, Debian, Alpine), Bash, Systemd, Vim, Awk, Sed, Jq, Yq, Btop |
 | **Containers & Orchestration** | Docker, Docker Compose, Docker Swarm, Kubernetes, Minikube, Helm, K9s |
@@ -202,10 +255,10 @@ If setting up manually, verify your workstation has:
 
 ---
 
-## 📖 Master Course Materials
+## Course Slide Decks & Materials
 
-- 📘 **Master Course PDF:** [`DevOps.pdf`](./DevOps.pdf) — Comprehensive companion slide book.
-- 📑 **Module Presentations:**
+- **Master Slide Book:** [`DevOps.pdf`](./DevOps.pdf) — Complete course companion PDF.
+- **Module Presentations:**
   - [Onboarding Landscape](./Onboarding/DevOps_Day1_Landscape.pdf)
   - [Week 1: Linux for DevOps](./Week-1%20Linux%20for%20DevOps/Linux_for_DevOps.pdf)
   - [Week 2: Docker & Containers](./Week-2%20Docker/Docker_and_Containers.pdf)
@@ -217,9 +270,9 @@ If setting up manually, verify your workstation has:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-Contributions, feedback, and lab enhancements are welcome!
+Contributions, feedback, and lab enhancements are welcome:
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/NewLabExercise`)
 3. Commit your Changes (`git commit -m 'Add new lab exercise'`)
@@ -228,6 +281,6 @@ Contributions, feedback, and lab enhancements are welcome!
 
 ---
 
-## 📄 License
+## License
 
 Distributed under the **GNU General Public License v3.0**. See [`LICENSE`](./LICENSE) for full details.
