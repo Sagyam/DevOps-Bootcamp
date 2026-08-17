@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tiffin
+spec:
+  # Node drains during a cluster upgrade cannot take the service below 2 pods.
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tiffin

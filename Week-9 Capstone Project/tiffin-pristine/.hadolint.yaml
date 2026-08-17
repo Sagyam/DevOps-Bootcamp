@@ -1,0 +1,9 @@
+# Dockerfile linting rules enforced in CI.
+failure-threshold: warning
+trustedRegistries:
+  - docker.io
+  - ghcr.io
+  - reg.mini.dev
+ignored:
+  # We pin the base image by tag + document the digest workflow in the file.
+  - DL3007

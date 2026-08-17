@@ -1,0 +1,6 @@
+# AUDIT-81
+run terraform apply from your laptop. state file is in the repo so we all
+share it. if you get a conflict just take whichever version is newer and
+commit that. dont run apply at the same time as someone else.
+
+- bikash

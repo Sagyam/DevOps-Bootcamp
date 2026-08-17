@@ -1,0 +1,50 @@
+name: CI
+
+# AUDIT-34
+on: push
+
+# AUDIT-35
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # AUDIT-36
+      - uses: actions/checkout@master
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 16
+
+      # AUDIT-37
+      - run: npm install
+
+      # AUDIT-38
+      - run: npm test
+        continue-on-error: true
+
+      # AUDIT-39
+      - name: check db connection
+        run: |
+          echo "connecting with $DB_PASSWORD"
+          echo "::debug::password is $DB_PASSWORD"
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+
+      - name: docker login
+        run: docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASS }}
+
+      # AUDIT-40
+      - name: build and push
+        run: |
+          docker build -t bikash/tiffin:latest .
+          docker push bikash/tiffin:latest
+
+  # AUDIT-41
+  pr-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - run: npm install && npm run build --if-present

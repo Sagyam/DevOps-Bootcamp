@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tiffin
+  labels:
+    app.kubernetes.io/name: tiffin
+    app.kubernetes.io/component: api
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0 # never drop below the current replica count
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tiffin
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tiffin
+        app.kubernetes.io/component: api
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '3000'
+        prometheus.io/path: /metrics
+    spec:
+      serviceAccountName: tiffin
+      automountServiceAccountToken: false
+      # Spread replicas across nodes and AZs so one node loss is survivable.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: tiffin
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: tiffin
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      # Gives in-flight requests time to finish before SIGTERM lands.
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: tiffin
+          # Set by kustomize in the overlay to an immutable digest.
+          image: tiffin
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            privileged: false
+            capabilities:
+              drop: ['ALL']
+          resources:
+            # Requests = what the scheduler reserves. Limits = the ceiling.
+            # No CPU limit on purpose: CPU throttling hurts tail latency more
+            # than a noisy neighbour does. Memory limit is required.
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PGHOST
+              valueFrom:
+                configMapKeyRef: { name: tiffin-config, key: PGHOST }
+            - name: PGDATABASE
+              valueFrom:
+                configMapKeyRef: { name: tiffin-config, key: PGDATABASE }
+            - name: PGUSER
+              valueFrom:
+                configMapKeyRef: { name: tiffin-config, key: PGUSER }
+            # Secret is created by External Secrets from AWS Secrets Manager.
+            # No secret value appears anywhere in this repository.
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef: { name: tiffin-db, key: password }
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.observability.svc:4318
+            - name: OTEL_SERVICE_NAME
+              value: tiffin-api
+          startupProbe:
+            # Buys slow starts time without making the liveness probe lenient.
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 3
+            failureThreshold: 20
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 2
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        # Root filesystem is read-only, so writable scratch is explicit.
+        - name: tmp
+          emptyDir: {}

@@ -1,0 +1,27 @@
+# AUDIT-60
+apiVersion: v1
+kind: Pod
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  containers:
+    - name: postgres
+      # AUDIT-61
+      image: postgres:latest
+      env:
+        - name: POSTGRES_PASSWORD
+          value: "Tiffin@2023"
+        - name: POSTGRES_USER
+          value: tiffin
+        - name: POSTGRES_DB
+          value: tiffin
+      # AUDIT-62
+      volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+  volumes:
+    - name: data
+      # AUDIT-63
+      emptyDir: {}

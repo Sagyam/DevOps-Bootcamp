@@ -1,0 +1,54 @@
+# Nightly logical backup to S3 with a verification step. A backup you have
+# never restored is not a backup.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: tiffin-db-backup
+spec:
+  schedule: '15 18 * * *' # 00:00 Nepal time (UTC+5:45)
+  timeZone: Asia/Kathmandu
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 600
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: tiffin-backup # IRSA role with s3:PutObject only
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile: { type: RuntimeDefault }
+          containers:
+            - name: backup
+              image: postgres:16.9-bookworm
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities: { drop: ['ALL'] }
+              env:
+                - name: PGHOST
+                  value: postgres.tiffin.svc.cluster.local
+                - name: PGUSER
+                  value: tiffin
+                - name: PGDATABASE
+                  value: tiffin
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef: { name: tiffin-db, key: password }
+                - name: S3_BUCKET
+                  value: tiffin-backups-ap-south-1
+              command: ['/bin/bash', '/scripts/backup.sh']
+              volumeMounts:
+                - { name: scripts, mountPath: /scripts }
+                - { name: work, mountPath: /work }
+              resources:
+                requests: { cpu: 100m, memory: 256Mi }
+                limits: { memory: 512Mi }
+          volumes:
+            - name: scripts
+              configMap: { name: tiffin-backup-scripts, defaultMode: 0755 }
+            - name: work
+              emptyDir: { sizeLimit: 5Gi }

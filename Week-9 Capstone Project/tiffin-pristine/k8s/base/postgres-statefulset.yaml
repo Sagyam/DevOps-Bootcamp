@@ -1,0 +1,72 @@
+# In production this would be RDS (see terraform/). This StatefulSet exists so
+# the whole stack runs on Minikube, and so students can see the difference
+# between a Pod with an emptyDir and a StatefulSet with a real volume.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: postgres
+          image: postgres:16.9-bookworm
+          ports:
+            - { name: pg, containerPort: 5432 }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ['ALL'] }
+          env:
+            - name: POSTGRES_DB
+              value: tiffin
+            - name: POSTGRES_USER
+              value: tiffin
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: tiffin-db, key: password }
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits: { memory: 1Gi }
+          livenessProbe:
+            exec: { command: ['pg_isready', '-U', 'tiffin'] }
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec: { command: ['pg_isready', '-U', 'tiffin'] }
+            periodSeconds: 5
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  clusterIP: None # headless, for stable DNS
+  selector:
+    app.kubernetes.io/name: postgres
+  ports:
+    - { name: pg, port: 5432, targetPort: pg }

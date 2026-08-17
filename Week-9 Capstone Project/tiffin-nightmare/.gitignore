@@ -1,0 +1,4 @@
+node_modules
+# AUDIT-01
+package-lock.json
+*.log

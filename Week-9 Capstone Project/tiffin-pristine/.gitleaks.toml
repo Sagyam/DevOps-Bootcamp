@@ -1,0 +1,21 @@
+# Secret scanning config. Runs on every commit via CI and on the full history
+# nightly. The legacy repo would fail this on line 1 of .env.
+title = "tiffin gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "nepali-mobile-in-fixture"
+description = "Customer phone number outside test fixtures"
+regex = '''(\+977)?9[78]\d{8}'''
+path = '''^(?!test/).*'''
+tags = ["pii"]
+
+[allowlist]
+description = "Known-safe paths"
+paths = [
+  '''\.env\.example$''',
+  '''^test/''',
+  '''^docs/''',
+]

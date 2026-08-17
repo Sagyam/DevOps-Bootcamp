@@ -1,0 +1,18 @@
+# Keeps build context small and stops secrets/junk from entering the image.
+.git
+.github
+node_modules
+coverage
+test
+docs
+k8s
+terraform
+observability
+scripts
+.env
+.env.*
+*.md
+Dockerfile
+docker-compose.yml
+.dockerignore
+.gitignore

@@ -1,0 +1,70 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: tiffin
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: tiffin.slo
+      interval: 30s
+      rules:
+        # Symptom-based alerting: page on what the user experiences, not on
+        # what a machine is doing. High CPU is not an outage; 500s are.
+        - alert: TiffinHighErrorRate
+          expr: |
+            sum(rate(tiffin_http_request_duration_seconds_count{status_code=~"5.."}[5m]))
+            /
+            sum(rate(tiffin_http_request_duration_seconds_count[5m])) > 0.02
+          for: 5m
+          labels: { severity: critical, team: platform }
+          annotations:
+            summary: 'Over 2% of requests are failing'
+            description: 'Error ratio is {{ $value | humanizePercentage }} over 5m.'
+            runbook_url: 'https://github.com/example/tiffin/blob/main/docs/RUNBOOK-dr-drill.md'
+
+        - alert: TiffinLatencyBudgetBurn
+          expr: |
+            histogram_quantile(0.99,
+              sum by (le) (rate(tiffin_http_request_duration_seconds_bucket[5m]))
+            ) > 0.5
+          for: 10m
+          labels: { severity: warning, team: platform }
+          annotations:
+            summary: 'p99 latency above 500ms'
+
+        - alert: TiffinAbsent
+          # The Ujyalo lesson, kept: absence of data is itself the signal.
+          expr: absent(up{job="tiffin"} == 1)
+          for: 2m
+          labels: { severity: critical, team: platform }
+          annotations:
+            summary: 'No healthy tiffin targets are being scraped'
+
+    - name: tiffin.capacity
+      rules:
+        - alert: TiffinDBPoolSaturated
+          expr: tiffin_db_pool_connections{state="waiting"} > 0
+          for: 5m
+          labels: { severity: warning }
+          annotations:
+            summary: 'Requests are queueing for a database connection'
+
+        - alert: TiffinPodRestarting
+          expr: increase(kube_pod_container_status_restarts_total{namespace="tiffin"}[15m]) > 3
+          for: 5m
+          labels: { severity: warning }
+          annotations:
+            summary: 'Pod {{ $labels.pod }} is crash-looping'
+
+    - name: tiffin.backups
+      rules:
+        - alert: TiffinBackupMissing
+          # Fires if no successful backup in 26 hours. This is the alert the
+          # legacy system did not have, and the reason it lost a week of data.
+          expr: time() - tiffin_backup_last_success_timestamp > 26 * 3600
+          for: 30m
+          labels: { severity: critical, team: platform }
+          annotations:
+            summary: 'No successful database backup in over 26 hours'
+            runbook_url: 'https://github.com/example/tiffin/blob/main/docs/RUNBOOK-dr-drill.md'

@@ -1,0 +1,55 @@
+# Development only. Production runs on Kubernetes; see k8s/.
+name: tiffin
+
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+    # Bind to loopback only. "3000:3000" would expose the dev app to the LAN.
+    ports:
+      - '127.0.0.1:3000:3000'
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+      PGHOST: db
+      PGPORT: 5432
+      PGDATABASE: tiffin
+      PGUSER: tiffin
+      PGPASSWORD: ${PGPASSWORD:?set PGPASSWORD in your .env}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: tiffin-api
+    # No sleep-and-hope. The app starts only once the DB reports healthy.
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  db:
+    image: postgres:16.9-bookworm
+    # Bind to loopback only so local migrations/tests can connect without LAN exposure.
+    ports:
+      - '127.0.0.1:5432:5432'
+    environment:
+      POSTGRES_DB: tiffin
+      POSTGRES_USER: tiffin
+      POSTGRES_PASSWORD: ${PGPASSWORD:?set PGPASSWORD in your .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tiffin -d tiffin']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  pgdata:

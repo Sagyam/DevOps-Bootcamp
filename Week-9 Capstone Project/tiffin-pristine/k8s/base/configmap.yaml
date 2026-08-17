@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tiffin-config
+data:
+  # Non-sensitive configuration only. Passwords live in Secrets.
+  PGHOST: postgres.tiffin.svc.cluster.local
+  PGDATABASE: tiffin
+  PGUSER: tiffin
+  LOG_LEVEL: info

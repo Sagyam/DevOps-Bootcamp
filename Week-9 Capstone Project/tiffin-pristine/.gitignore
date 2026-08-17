@@ -1,0 +1,19 @@
+node_modules/
+coverage/
+dist/
+
+# Secrets never enter git. Only .env.example is committed.
+.env
+.env.*
+!.env.example
+
+# Terraform: state can contain plaintext secrets. It lives in S3, not here.
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!example.tfvars
+crash.log
+
+*.log
+.DS_Store

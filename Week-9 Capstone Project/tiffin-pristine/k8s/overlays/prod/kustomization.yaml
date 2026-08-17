@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tiffin
+
+resources:
+  - ../../base
+  - ingress.yaml
+
+replicas:
+  - name: tiffin
+    count: 3
+
+# CD pins this to an immutable digest on every release.
+images:
+  - name: tiffin
+    newName: ghcr.io/example/tiffin
+    newTag: v1.0.0
+
+patches:
+  - path: resources-patch.yaml
+    target: { kind: Deployment, name: tiffin }
+
+  # Postgres is RDS in production; the in-cluster StatefulSet is removed.
+  - target: { kind: StatefulSet, name: postgres }
+    patch: |
+      $patch: delete
+      apiVersion: apps/v1
+      kind: StatefulSet
+      metadata:
+        name: postgres

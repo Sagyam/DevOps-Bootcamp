@@ -1,0 +1,84 @@
+{
+  "title": "Tiffin — Service Overview",
+  "uid": "tiffin-overview",
+  "tags": ["tiffin", "golden-signals"],
+  "timezone": "Asia/Kathmandu",
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Traffic — requests/sec by route",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (route) (rate(tiffin_http_request_duration_seconds_count[5m]))",
+          "legendFormat": "{{route}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Errors — 5xx ratio",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(tiffin_http_request_duration_seconds_count{status_code=~\"5..\"}[5m])) / sum(rate(tiffin_http_request_duration_seconds_count[5m]))",
+          "legendFormat": "error ratio"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "max": 0.1 } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency — p50 / p95 / p99",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(tiffin_http_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(tiffin_http_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(tiffin_http_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "p99"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Saturation — DB pool connections",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [{ "expr": "tiffin_db_pool_connections", "legendFormat": "{{state}}" }]
+    },
+    {
+      "type": "stat",
+      "title": "Hours since last successful backup",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 16 },
+      "targets": [{ "expr": "(time() - tiffin_backup_last_success_timestamp) / 3600" }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 25 },
+              { "color": "red", "value": 26 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "logs",
+      "title": "Recent errors (Loki)",
+      "gridPos": { "h": 10, "w": 18, "x": 6, "y": 16 },
+      "datasource": { "type": "loki" },
+      "targets": [{ "expr": "{namespace=\"tiffin\"} | json | level >= 50" }]
+    }
+  ]
+}

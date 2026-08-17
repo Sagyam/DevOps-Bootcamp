@@ -1,0 +1,35 @@
+name: Deploy
+
+# AUDIT-42
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # AUDIT-43
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          # AUDIT-44
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      # AUDIT-45
+      - name: configure aws
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      # AUDIT-46
+      - name: kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          chmod 777 ~/.kube/config
+
+      # AUDIT-47
+      - name: deploy
+        run: |
+          kubectl apply -f k8s/
+          kubectl rollout restart deployment/tiffin
