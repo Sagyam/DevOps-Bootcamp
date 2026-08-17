@@ -106,6 +106,49 @@ describe('GET /metrics', () => {
   });
 });
 
+describe('Orders and Menu CRUD', () => {
+  it('lists orders via GET /orders', async () => {
+    const res = await request(app).get('/orders');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('orders');
+    expect(Array.isArray(res.body.orders)).toBe(true);
+  });
+
+  it('updates order status via PATCH /orders/:id', async () => {
+    const createRes = await request(app)
+      .post('/orders')
+      .send({ item_id: itemId, quantity: 1, customer_phone: '9841234567' });
+    const orderId = createRes.body.id;
+
+    const patchRes = await request(app)
+      .patch(`/orders/${orderId}`)
+      .send({ status: 'PREPARING' });
+    expect(patchRes.status).toBe(200);
+    expect(patchRes.body.status).toBe('PREPARING');
+  });
+
+  it('creates and deletes a menu item', async () => {
+    const createRes = await request(app)
+      .post('/menu')
+      .send({ name: 'Test Newari Khaja', price_npr: 320 });
+    expect(createRes.status).toBe(201);
+    expect(createRes.body.name).toBe('Test Newari Khaja');
+    const newMenuId = createRes.body.id;
+
+    const deleteRes = await request(app).delete(`/menu/${newMenuId}`);
+    expect(deleteRes.status).toBe(200);
+  });
+});
+
+describe('Web UI static serving', () => {
+  it('serves the web ui HTML at GET /', async () => {
+    const res = await request(app).get('/');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('text/html');
+    expect(res.text).toContain('Tiffin Box');
+  });
+});
+
 describe('error handling', () => {
   it('does not leak stack traces to clients', async () => {
     const res = await request(app).get('/orders/not-a-uuid');

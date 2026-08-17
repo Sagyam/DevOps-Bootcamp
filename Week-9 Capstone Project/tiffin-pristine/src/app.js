@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express from 'express';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -8,6 +10,8 @@ import { menuRouter } from './routes/menu.js';
 import { ordersRouter } from './routes/orders.js';
 import { config } from './config.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 // Exported separately from server.js so tests can mount the app without
 // binding a port or starting the OTel SDK.
 export function createApp() {
@@ -16,7 +20,21 @@ export function createApp() {
   app.disable('x-powered-by');
   app.set('trust proxy', 1); // behind the ingress; needed for correct client IPs
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: ["'self'"],
+        },
+      },
+    }),
+  );
+  app.use(express.static(path.join(__dirname, 'public')));
   app.use(express.json({ limit: '32kb' })); // body size cap
   app.use(httpLogger);
   app.use(metricsMiddleware);

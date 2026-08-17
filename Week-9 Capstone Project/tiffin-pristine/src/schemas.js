@@ -18,6 +18,26 @@ export const orderIdSchema = z.object({
   id: z.string().uuid('order id must be a UUID'),
 });
 
+export const updateOrderStatusSchema = z.object({
+  status: z.enum(['PENDING', 'PREPARING', 'DELIVERED', 'CANCELLED']),
+});
+
+export const createMenuItemSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  price_npr: z.number().int().min(1).max(100000),
+  available: z.boolean().optional(),
+});
+
+export const updateMenuItemSchema = z.object({
+  name: z.string().trim().min(1).max(100).optional(),
+  price_npr: z.number().int().min(1).max(100000).optional(),
+  available: z.boolean().optional(),
+});
+
+export const menuItemIdSchema = z.object({
+  id: z.string().uuid('menu item id must be a UUID'),
+});
+
 // Reusable Express middleware factory.
 export function validate(schema, source = 'body') {
   return (req, res, next) => {

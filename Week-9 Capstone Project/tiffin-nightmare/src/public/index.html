@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tiffin Box — Authentic Nepali Lunch Delivery & Catering</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-wrapper">
+
+    <!-- Top Navigation Header -->
+    <header class="navbar">
+      <div class="nav-container">
+        <div class="brand">
+          <div class="brand-logo">🍱</div>
+          <div class="brand-info">
+            <h1 class="brand-name">Tiffin Box</h1>
+            <span class="brand-tagline">Authentic Daily Lunch & Catering</span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <div class="kitchen-status-pill" id="kitchen-status-pill">
+            <span class="status-dot"></span>
+            <span class="status-text" id="kitchen-status-text">Kitchen Online</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="main-tabs" role="tablist">
+        <div class="tabs-container">
+          <button class="nav-tab active" data-tab="tab-menu" role="tab" aria-selected="true">
+            <span class="tab-icon">🍲</span>
+            <span>Menu & Order</span>
+          </button>
+          <button class="nav-tab" data-tab="tab-orders" role="tab" aria-selected="false">
+            <span class="tab-icon">📋</span>
+            <span>Kitchen Orders</span>
+            <span class="orders-count-badge" id="nav-orders-count">0</span>
+          </button>
+          <button class="nav-tab" data-tab="tab-track" role="tab" aria-selected="false">
+            <span class="tab-icon">🔍</span>
+            <span>Track Order</span>
+          </button>
+          <button class="nav-tab" data-tab="tab-admin" role="tab" aria-selected="false">
+            <span class="tab-icon">⚙️</span>
+            <span>Menu Manager</span>
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="main-content">
+      
+      <!-- TAB 1: MENU & ORDERING -->
+      <section class="tab-content active" id="tab-menu" role="tabpanel">
+        
+        <!-- Hero Banner -->
+        <div class="hero-banner">
+          <div class="hero-text">
+            <span class="hero-subtitle">Freshly Prepared Daily</span>
+            <h2 class="hero-title">Delicious, Home-Style Lunch Delivered to Your Desk</h2>
+            <p class="hero-desc">Choose from authentic Nepali Thali sets, steam momos, and light snacks. Ordered in seconds, delivered piping hot.</p>
+          </div>
+          <div class="hero-stats">
+            <div class="hero-stat-card">
+              <span class="stat-num">30 Min</span>
+              <span class="stat-lbl">Avg Delivery</span>
+            </div>
+            <div class="hero-stat-card">
+              <span class="stat-num">100%</span>
+              <span class="stat-lbl">Fresh Ingredients</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="order-layout">
+          
+          <!-- Left: Menu Catalog -->
+          <div class="menu-section">
+            <div class="section-header">
+              <div>
+                <h3 class="section-title">Today's Lunch Menu</h3>
+                <p class="section-subtitle">Select your favorite meal to begin your order</p>
+              </div>
+              <button class="btn btn-secondary btn-sm" id="btn-reload-menu">
+                <span>↻ Refresh Menu</span>
+              </button>
+            </div>
+
+            <div class="menu-grid" id="menu-items-grid">
+              <div class="loading-box">
+                <div class="spinner"></div>
+                <span>Loading today's fresh menu...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Order Checkout Drawer -->
+          <div class="checkout-section">
+            <div class="checkout-card">
+              <div class="checkout-header">
+                <h3 class="checkout-title">Your Lunch Order</h3>
+                <span class="badge badge-accent">Quick Checkout</span>
+              </div>
+
+              <form id="customer-order-form" class="checkout-form">
+                
+                <!-- Selected Dish Summary -->
+                <div class="selected-dish-box" id="selected-dish-box">
+                  <div class="selected-dish-header">
+                    <span class="dish-title" id="checkout-dish-name">Please select a dish from the menu</span>
+                    <span class="dish-price" id="checkout-dish-price">रू 0</span>
+                  </div>
+                  <input type="hidden" id="checkout-item-id" required>
+                  <small class="dish-hint" id="checkout-item-hint">Click "Select" on any menu item</small>
+                </div>
+
+                <!-- Quantity -->
+                <div class="form-group">
+                  <label for="checkout-quantity" class="form-label">Number of Portions</label>
+                  <div class="qty-stepper">
+                    <button type="button" class="btn-stepper" id="btn-qty-dec">-</button>
+                    <input type="number" id="checkout-quantity" class="qty-input" value="1" min="1" max="20" required>
+                    <button type="button" class="btn-stepper" id="btn-qty-inc">+</button>
+                  </div>
+                </div>
+
+                <!-- Customer Info (Default Pre-filled) -->
+                <div class="form-group">
+                  <label for="checkout-phone" class="form-label">Contact Phone (Nepali Mobile)</label>
+                  <input type="tel" id="checkout-phone" class="form-input" value="9841234567" placeholder="e.g. 9841234567" required>
+                  <small class="field-hint">Used for delivery arrival SMS</small>
+                </div>
+
+                <!-- Delivery Note & Quick Chips -->
+                <div class="form-group">
+                  <label for="checkout-note" class="form-label">Special Instructions & Delivery Notes</label>
+                  <input type="text" id="checkout-note" class="form-input" value="Less spicy, extra achar" placeholder="e.g. Mild spicy, 3rd floor office">
+                  
+                  <div class="note-chips">
+                    <button type="button" class="chip-btn" data-note="Less spicy, extra achar">Less Spicy</button>
+                    <button type="button" class="chip-btn" data-note="Extra spicy with timur achar">Extra Spicy</button>
+                    <button type="button" class="chip-btn" data-note="Deliver to 3rd Floor Reception">3rd Floor Office</button>
+                    <button type="button" class="chip-btn" data-note="No plastic cutlery needed">Eco Friendly</button>
+                  </div>
+                </div>
+
+                <!-- Price Summary -->
+                <div class="bill-summary">
+                  <div class="bill-row">
+                    <span>Item Subtotal</span>
+                    <span id="bill-subtotal">रू 0</span>
+                  </div>
+                  <div class="bill-row">
+                    <span>Delivery Fee</span>
+                    <span class="text-free">FREE</span>
+                  </div>
+                  <div class="bill-divider"></div>
+                  <div class="bill-row total">
+                    <span>Total Amount</span>
+                    <span class="total-amount" id="bill-total">रू 0</span>
+                  </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn btn-primary btn-block" id="btn-place-order" disabled>
+                  <span class="btn-text">Confirm & Place Order</span>
+                </button>
+              </form>
+
+              <!-- Order Placed Success Card -->
+              <div class="order-success-card hidden" id="order-success-card">
+                <div class="success-icon">✓</div>
+                <h4 class="success-title">Order Placed Successfully!</h4>
+                <p class="success-desc">Your lunch is being freshly prepared in our kitchen.</p>
+                
+                <div class="order-receipt">
+                  <div class="receipt-row">
+                    <span class="lbl">Order ID</span>
+                    <span class="val font-mono" id="success-order-id"></span>
+                  </div>
+                  <div class="receipt-row">
+                    <span class="lbl">Dish</span>
+                    <span class="val" id="success-item-name"></span>
+                  </div>
+                  <div class="receipt-row">
+                    <span class="lbl">Quantity</span>
+                    <span class="val" id="success-qty"></span>
+                  </div>
+                  <div class="receipt-row">
+                    <span class="lbl">Status</span>
+                    <span class="badge badge-warning" id="success-status">PENDING</span>
+                  </div>
+                </div>
+
+                <div class="success-actions">
+                  <button class="btn btn-secondary btn-sm" id="btn-track-now">Track This Order ➔</button>
+                  <button class="btn btn-outline btn-sm" id="btn-order-another">Order Another Item</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 2: KITCHEN ORDERS DASHBOARD -->
+      <section class="tab-content" id="tab-orders" role="tabpanel">
+        <div class="section-header">
+          <div>
+            <h3 class="section-title">Live Kitchen & Orders Dashboard</h3>
+            <p class="section-subtitle">Real-time order queue with instant status updating and management</p>
+          </div>
+          <div class="header-tools">
+            <button class="btn btn-secondary btn-sm" id="btn-refresh-orders">
+              <span>↻ Refresh Orders</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="orders-filter-bar">
+          <button class="filter-chip active" data-filter="ALL">All Orders (<span id="count-all">0</span>)</button>
+          <button class="filter-chip" data-filter="PENDING">Pending (<span id="count-pending">0</span>)</button>
+          <button class="filter-chip" data-filter="PREPARING">In Kitchen (<span id="count-preparing">0</span>)</button>
+          <button class="filter-chip" data-filter="DELIVERED">Delivered (<span id="count-delivered">0</span>)</button>
+          <button class="filter-chip" data-filter="CANCELLED">Cancelled (<span id="count-cancelled">0</span>)</button>
+        </div>
+
+        <!-- Orders Table / Card Grid -->
+        <div class="orders-container" id="orders-container">
+          <div class="loading-box">
+            <div class="spinner"></div>
+            <span>Fetching live order queue...</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: TRACK ORDER -->
+      <section class="tab-content" id="tab-track" role="tabpanel">
+        <div class="track-wrapper">
+          <div class="track-header text-center">
+            <h3 class="section-title">Track Your Lunch Delivery</h3>
+            <p class="section-subtitle">Enter your Order ID to monitor preparation and dispatch in real-time</p>
+          </div>
+
+          <div class="track-search-card">
+            <form id="track-search-form" class="track-search-form">
+              <input type="text" id="track-search-input" class="form-input font-mono" placeholder="Enter Order ID (e.g. 1 or UUID)" required>
+              <button type="submit" class="btn btn-primary" id="btn-do-track">
+                <span>Find Order</span>
+              </button>
+            </form>
+
+            <!-- Recent Orders Chips -->
+            <div class="recent-orders-bar" id="recent-orders-bar">
+              <span class="recent-lbl">Recent Orders:</span>
+              <div class="recent-chips" id="recent-chips-container">
+                <span class="text-muted text-sm">No recent orders yet</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Tracking Timeline Box -->
+          <div class="track-result-box hidden" id="track-result-box">
+            
+            <div class="timeline-stepper">
+              <div class="stepper-step" id="track-step-1">
+                <div class="stepper-node">1</div>
+                <div class="stepper-text">
+                  <span class="node-title">Order Received</span>
+                  <span class="node-time">Confirmed in System</span>
+                </div>
+              </div>
+              <div class="stepper-bar" id="track-bar-1"></div>
+              <div class="stepper-step" id="track-step-2">
+                <div class="stepper-node">2</div>
+                <div class="stepper-text">
+                  <span class="node-title">Kitchen Preparing</span>
+                  <span class="node-time">Fresh Cooking</span>
+                </div>
+              </div>
+              <div class="stepper-bar" id="track-bar-2"></div>
+              <div class="stepper-step" id="track-step-3">
+                <div class="stepper-node">3</div>
+                <div class="stepper-text">
+                  <span class="node-title">Out for Delivery</span>
+                  <span class="node-time">Arriving Soon</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Order Details Card -->
+            <div class="track-details-card">
+              <div class="track-details-grid">
+                <div class="track-detail-item">
+                  <span class="label">Order ID</span>
+                  <span class="value font-mono" id="track-info-id"></span>
+                </div>
+                <div class="track-detail-item">
+                  <span class="label">Meal Ordered</span>
+                  <span class="value font-bold" id="track-info-dish"></span>
+                </div>
+                <div class="track-detail-item">
+                  <span class="label">Portions</span>
+                  <span class="value" id="track-info-qty"></span>
+                </div>
+                <div class="track-detail-item">
+                  <span class="label">Current Status</span>
+                  <span class="badge" id="track-info-status"></span>
+                </div>
+                <div class="track-detail-item full-width" id="track-note-wrapper">
+                  <span class="label">Delivery Note</span>
+                  <span class="value" id="track-info-note"></span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Error Alert -->
+          <div class="alert-box alert-error hidden" id="track-error-box">
+            <span class="alert-icon">⚠️</span>
+            <span id="track-error-text">Order not found. Please check your Order ID and try again.</span>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 4: MENU MANAGER (ADMIN CRUD) -->
+      <section class="tab-content" id="tab-admin" role="tabpanel">
+        <div class="admin-layout">
+          
+          <!-- Add New Menu Item Form -->
+          <div class="admin-add-card">
+            <div class="card-header">
+              <h3 class="card-title">Add New Dish to Menu</h3>
+              <span class="badge badge-accent">Admin CRUD</span>
+            </div>
+            
+            <form id="add-menu-form" class="admin-form">
+              <div class="form-group">
+                <label for="admin-dish-name" class="form-label">Dish Name</label>
+                <input type="text" id="admin-dish-name" class="form-input" value="Special Newari Khaja Set" placeholder="e.g. Newari Khaja Set" required>
+              </div>
+
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label for="admin-dish-price" class="form-label">Price (NPR रू)</label>
+                  <input type="number" id="admin-dish-price" class="form-input" value="350" min="1" required>
+                </div>
+                
+                <div class="form-group">
+                  <label for="admin-dish-avail" class="form-label">Availability</label>
+                  <select id="admin-dish-avail" class="form-input">
+                    <option value="true" selected>In Stock (Available)</option>
+                    <option value="false">Sold Out</option>
+                  </select>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block" id="btn-save-menu-item">
+                <span>+ Add Item to Live Menu</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Existing Menu Catalog Manager -->
+          <div class="admin-catalog-card">
+            <div class="section-header">
+              <div>
+                <h3 class="section-title">Menu Catalog Management</h3>
+                <p class="section-subtitle">Update prices, toggle dish availability, or remove items</p>
+              </div>
+            </div>
+
+            <div class="admin-menu-list" id="admin-menu-list">
+              <div class="loading-box">
+                <div class="spinner"></div>
+                <span>Loading catalog items...</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <span class="footer-logo">🍱</span>
+          <span class="footer-title">Tiffin Box Delivery</span>
+          <span class="footer-copy">© 2026 Tiffin Box Pvt. Ltd. All rights reserved.</span>
+        </div>
+        <div class="footer-links">
+          <span>Kathmandu & Lalitpur Daily Express Lunch</span>
+          <span>Hotline: 01-4422000</span>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Toast Alert Notifications -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
