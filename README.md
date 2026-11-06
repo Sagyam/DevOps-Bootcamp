@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.svg" alt="DevOps &amp; Platform Engineering Bootcamp — 9-week hands-on curriculum" width="100%">
+</p>
+
 # DevOps & Platform Engineering Bootcamp
 
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](LICENSE)
@@ -29,28 +33,44 @@ A comprehensive, production-grade, 9-week hands-on DevOps & Platform Engineering
 ## Curriculum Progression Architecture
 
 ```mermaid
-flowchart TD
-    subgraph Phase1 ["Phase 1: Systems & Packaging"]
-        direction LR
-        W0["Onboarding<br/>Environment Setup"] --> W1["Week 1: Linux<br/>Internals & CLI"] --> W2["Week 2: Docker<br/>Containers & Storage"]
+%%{init: {"theme":"base","fontFamily":"ui-monospace, SFMono-Regular, Menlo, Consolas, Liberation Mono, monospace","themeVariables":{"fontFamily":"ui-monospace, SFMono-Regular, Menlo, Consolas, Liberation Mono, monospace","fontSize":"14px","background":"#0A0A0A","primaryColor":"#0A0A0A","primaryTextColor":"#E5E5E5","primaryBorderColor":"#E5E5E5","lineColor":"#8A8A8A","textColor":"#E5E5E5","titleColor":"#8A8A8A","clusterBkg":"#111111","clusterBorder":"#3A3A3A","edgeLabelBackground":"#0A0A0A"},"flowchart":{"curve":"linear","nodeSpacing":30,"rankSpacing":44,"padding":16}}}%%
+flowchart TB
+    subgraph ROOT ["~/devops-bootcamp"]
+        direction TB
+        subgraph P1 [" "]
+            direction LR
+            L1["PHASE_01<br/>systems &<br/>packaging"] ~~~ W0["<b>[00] onboarding</b><br/>workstation setup"] --> W1["<b>[01] linux</b><br/>internals & cli"] --> W2["<b>[02] docker</b><br/>containers & storage"]
+        end
+        subgraph P2 [" "]
+            direction LR
+            L2["PHASE_02<br/>automation &<br/>orchestration"] ~~~ W3["<b>[03] ci/cd</b><br/>actions & jenkins"] --> W4["<b>[04] kubernetes</b><br/>cluster orchestration"] --> W5["<b>[05] aws</b><br/>cloud architecture"]
+        end
+        subgraph P3 [" "]
+            direction LR
+            L3["PHASE_03<br/>operations &<br/>delivery"] ~~~ W6["<b>[06] observability</b><br/>logs · metrics · traces"] --> W7["<b>[07] terraform</b><br/>infrastructure as code"] --> W8["<b>[08] gitops</b><br/>argo cd & flagger"]
+        end
+        subgraph P4 [" "]
+            direction LR
+            L4["PHASE_04<br/>sre &<br/>production"] ~~~ W9["<b>[09] capstone</b><br/>83 defects · dr drills"]
+        end
+        P1 --> P2 --> P3 --> P4
     end
 
-    subgraph Phase2 ["Phase 2: Automation & Orchestration"]
-        direction LR
-        W3["Week 3: CI/CD<br/>GitHub Actions & Jenkins"] --> W4["Week 4: Kubernetes<br/>Cluster Orchestration"] --> W5["Week 5: AWS<br/>Cloud Architecture"]
-    end
+    classDef week fill:#0A0A0A,stroke:#E5E5E5,stroke-width:1.5px,color:#E5E5E5
+    classDef final fill:#FFFFFF,stroke:#FFFFFF,stroke-width:1.5px,color:#0A0A0A
+    classDef lane fill:none,stroke:none,color:#8A8A8A
+    class W0,W1,W2,W3,W4,W5,W6,W7,W8 week
+    class W9 final
+    class L1,L2,L3,L4 lane
 
-    subgraph Phase3 ["Phase 3: Operations & Delivery"]
-        direction LR
-        W6["Week 6: Observability<br/>Logs, Metrics, Traces"] --> W7["Week 7: Terraform<br/>Infrastructure as Code"] --> W8["Week 8: GitOps<br/>Argo CD & Flagger"]
-    end
+    style ROOT fill:#0A0A0A,stroke:#3A3A3A,stroke-width:1px,color:#8A8A8A
+    style P1 fill:#141414,stroke:#3A3A3A,stroke-width:1px
+    style P2 fill:#141414,stroke:#3A3A3A,stroke-width:1px
+    style P3 fill:#141414,stroke:#3A3A3A,stroke-width:1px
+    style P4 fill:#141414,stroke:#3A3A3A,stroke-width:1px
 
-    subgraph Phase4 ["Phase 4: SRE & Production Capstone"]
-        direction LR
-        W9["Week 9: Capstone<br/>83-Defect Audit & DR Drills"]
-    end
-
-    Phase1 --> Phase2 --> Phase3 --> Phase4
+    linkStyle 1,2,4,5,7,8 stroke:#E5E5E5,stroke-width:1.5px
+    linkStyle 10,11,12 stroke:#5A5A5A,stroke-width:1.5px
 ```
 
 ---
@@ -180,31 +200,66 @@ DevOps Bootcamp Directory Structure
 - **Audit Matrix:** Detailed 83-defect remediation ledger ([`IMPROVEMENTS.md`](./Week-9%20Capstone%20Project/IMPROVEMENTS.md)).
 
 ```mermaid
-graph LR
-    subgraph Traffic ["Traffic Ingress"]
-        Client([Client Traffic]) --> Ingress[NGINX Ingress]
-        Ingress --> Flagger[Flagger Canary Router]
+%%{init: {"theme":"base","fontFamily":"ui-monospace, SFMono-Regular, Menlo, Consolas, Liberation Mono, monospace","themeVariables":{"fontFamily":"ui-monospace, SFMono-Regular, Menlo, Consolas, Liberation Mono, monospace","fontSize":"14px","background":"#0A0A0A","primaryColor":"#0A0A0A","primaryTextColor":"#E5E5E5","primaryBorderColor":"#E5E5E5","lineColor":"#8A8A8A","textColor":"#E5E5E5","titleColor":"#8A8A8A","clusterBkg":"#111111","clusterBorder":"#3A3A3A","edgeLabelBackground":"#0A0A0A"},"flowchart":{"curve":"linear","nodeSpacing":30,"rankSpacing":44,"padding":16}}}%%
+flowchart TB
+    subgraph ROOT ["~/tiffin-platform"]
+        direction TB
+        subgraph Delivery ["~/gitops"]
+            ArgoCD{{"<b>argo cd</b><br/>gitops sync"}}
+        end
+        subgraph Traffic ["~/ingress"]
+            direction LR
+            Client["client"] --> Ingress["nginx ingress"] --> Flagger{{"<b>flagger</b><br/>canary router"}}
+        end
+        subgraph Workloads ["~/workloads"]
+            direction LR
+            PodsPrimary["primary pods<br/>~90% traffic"]
+            PodsCanary["canary pods<br/>~10% traffic"]
+            API["<b>tiffin rest api</b>"]
+        end
+        subgraph Persistence ["~/data"]
+            direction LR
+            Redis[["redis<br/>cache"]]
+            Postgres[["postgresql<br/>primary"]] --> WAL[["wal-g<br/>backups · pitr"]]
+        end
+        subgraph Telemetry ["~/observability"]
+            direction LR
+            Prometheus["prometheus"]
+            Loki["loki"]
+            Jaeger["jaeger / otel"]
+        end
     end
 
-    subgraph ServiceMesh ["Workloads"]
-        Flagger --> PodsPrimary[Primary Pods]
-        Flagger -. Canary Split .-> PodsCanary[Canary Pods]
-        PodsPrimary --> API[Tiffin REST API]
-    end
+    ArgoCD ==>|"declarative sync"| Flagger
+    Flagger -->|"stable"| PodsPrimary
+    Flagger -.->|"canary split"| PodsCanary
+    PodsPrimary --> API
+    PodsCanary -.-> API
+    API --> Redis
+    API --> Postgres
+    API -.->|"metrics"| Prometheus
+    API -.->|"logs"| Loki
+    API -.->|"traces"| Jaeger
+    Flagger -.->|"canary analysis · promql"| Prometheus
 
-    subgraph Persistence ["Data Layer"]
-        API --> Redis[(Redis Cache)]
-        API --> Postgres[(PostgreSQL Primary)]
-        Postgres --> WAL[(WAL Backup / PITR)]
-    end
+    classDef box fill:#0A0A0A,stroke:#E5E5E5,stroke-width:1.5px,color:#E5E5E5
+    classDef canary fill:#0A0A0A,stroke:#E5E5E5,stroke-width:1.5px,stroke-dasharray:5 4,color:#E5E5E5
+    classDef key fill:#FFFFFF,stroke:#FFFFFF,stroke-width:1.5px,color:#0A0A0A
+    classDef dim fill:#0A0A0A,stroke:#8A8A8A,stroke-width:1px,color:#BDBDBD
+    class Client,Ingress,PodsPrimary,Redis,Postgres,WAL box
+    class PodsCanary canary
+    class Flagger,API,ArgoCD key
+    class Prometheus,Loki,Jaeger dim
 
-    subgraph Telemetry ["Observability & GitOps"]
-        Prometheus[Prometheus] -. Metric Analysis .-> Flagger
-        Loki[Grafana Loki] -. Log Streams .-> PodsPrimary
-        Jaeger[Jaeger / OTel] -. Traces .-> API
-        ArgoCD[Argo CD] ==>|Declarative GitOps| Traffic
-        ArgoCD ==>|Declarative GitOps| ServiceMesh
-    end
+    style ROOT fill:#0A0A0A,stroke:#3A3A3A,stroke-width:1px,color:#8A8A8A
+    style Delivery fill:#141414,stroke:#3A3A3A,stroke-width:1px,color:#8A8A8A
+    style Traffic fill:#141414,stroke:#3A3A3A,stroke-width:1px,color:#8A8A8A
+    style Workloads fill:#141414,stroke:#3A3A3A,stroke-width:1px,color:#8A8A8A
+    style Persistence fill:#141414,stroke:#3A3A3A,stroke-width:1px,color:#8A8A8A
+    style Telemetry fill:#141414,stroke:#3A3A3A,stroke-width:1px,color:#8A8A8A
+
+    linkStyle 0,1,2,3,4,5,6,7,8,9 stroke:#E5E5E5,stroke-width:1.5px
+    linkStyle 10,11,12,13 stroke:#8A8A8A,stroke-width:1px
 ```
 
 ---
